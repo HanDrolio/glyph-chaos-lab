@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>💭 DREAM AI v2 — the archive dreams back</title>
+<title>💭 DREAM AI v3 — the archive with senses</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -12,11 +12,10 @@
     height: 100vh; display: flex; flex-direction: column;
   }
   header {
-    padding: 14px 18px; border-bottom: 1px solid #1e1e3a;
-    display: flex; justify-content: space-between; align-items: center;
-    flex-wrap: wrap; gap: 8px;
+    padding: 12px 18px; border-bottom: 1px solid #1e1e3a;
+    display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
   }
-  header h1 { font-size: 16px; letter-spacing: 2px; color: #b39dff; }
+  header h1 { font-size: 16px; letter-spacing: 2px; color: #b39dff; margin-right: auto; }
   header .sub { font-size: 11px; color: #667; width: 100%; }
   .btn {
     font-family: inherit; font-size: 12px; cursor: pointer;
@@ -24,6 +23,11 @@
     padding: 6px 12px; border-radius: 6px;
   }
   .btn.on { background: #2a1a4a; color: #ffb3ff; border-color: #8a5adf; }
+  #senseBar {
+    padding: 6px 18px; font-size: 12px; color: #7fa8c9;
+    border-bottom: 1px solid #1e1e3a; display: flex; gap: 16px; flex-wrap: wrap;
+  }
+  #senseBar .off { color: #555; }
   #chat {
     flex: 1; overflow-y: auto; padding: 18px;
     display: flex; flex-direction: column; gap: 12px;
@@ -34,7 +38,10 @@
   }
   .user { align-self: flex-end; background: #1a2a4a; border: 1px solid #2a4a7a; }
   .dream { align-self: flex-start; background: #16122a; border: 1px solid #3a2a5a; }
-  .dream .tag { display: block; font-size: 10px; color: #8a7abf; margin-bottom: 4px; letter-spacing: 2px; }
+  .tool { align-self: flex-start; background: #0f1f1a; border: 1px solid #2a5a3a; }
+  .dream .tag, .tool .tag { display: block; font-size: 10px; margin-bottom: 4px; letter-spacing: 2px; }
+  .dream .tag { color: #8a7abf; }
+  .tool .tag { color: #5abf8a; }
   .recall { color: #6fb3ff; font-size: 11px; display: block; margin-top: 6px; opacity: 0.7; }
   #inputRow { display: flex; gap: 8px; padding: 12px; border-top: 1px solid #1e1e3a; }
   #input {
@@ -50,20 +57,23 @@
 </head>
 <body>
 <header>
-  <h1>💭 DREAM AI <span style="color:#667">v2</span></h1>
-  <button id="dreamToggle" class="btn on">🌙 auto-dream: ON (60s)</button>
-  <div class="sub">retrieval × markov — it finds the memory that matches your words, then dreams forward from it 🧬📼</div>
+  <h1>💭 DREAM AI <span style="color:#667">v3</span></h1>
+  <button id="dreamToggle" class="btn on">🌙 auto-dream: ON</button>
+  <button id="wxRefresh" class="btn">🌦️ refresh sky</button>
+  <div class="sub">now with SENSES: 🕐 time · 🌦️ weather (open-meteo, updates hourly) — ask it about either</div>
 </header>
+<div id="senseBar">
+  <span id="clock">🕐 ...</span>
+  <span id="wx" class="off">🌦️ consulting the sky...</span>
+</div>
 <div id="chat"></div>
 <div id="inputRow">
-  <input id="input" placeholder="whisper to the archive..." autocomplete="off">
+  <input id="input" placeholder="whisper to the archive... or ask about time / weather" autocomplete="off">
   <button id="send">send 🌀</button>
 </div>
 <script>
 // ═══════════════════════════════════════════════════════════
-// THE CORPUS v2 — the whole vault, distilled 🧬
-// persona mythology · glyphs · core rule · music · ward saga
-// ripple journals · voice threads · october builds
+// THE CORPUS v3 — the vault, distilled 🧬
 // ═══════════════════════════════════════════════════════════
 const CORPUS = `
 everything is a loop except the soul
@@ -313,8 +323,7 @@ i wanna see some crazy shit
 `;
 
 // ═══════════════════════════════════
-// ENGINE v2 🧠
-// retrieval (IDF-weighted match) + order-3→2 markov riff + anti-repeat
+// ENGINE v3 🧠 — retrieval + markov riff
 // ═══════════════════════════════════
 const lines = CORPUS.trim().split('\n').map(l => l.trim()).filter(Boolean);
 const STOP = new Set(['the','a','an','and','or','but','of','to','in','is','it','i','im','you','my','me','we','was','on','at','so','be','that','this','with','for','just','its','all','are','not']);
@@ -323,7 +332,6 @@ function tokenize(text){
   return text.toLowerCase().replace(/[^a-z0-9'\s]/g,' ').split(/\s+/).filter(Boolean);
 }
 
-// document frequency for IDF weighting
 const df = new Map();
 const lineTokens = lines.map(l => tokenize(l));
 for(const toks of lineTokens){
@@ -331,7 +339,6 @@ for(const toks of lineTokens){
 }
 function idf(t){ return Math.log((lines.length + 1) / ((df.get(t)||0) + 1)) + 1; }
 
-// order-3 chain with order-2 backoff
 const chain3 = new Map(), chain2 = new Map(), starters = [];
 for(const toks of lineTokens){
   if(toks.length < 3) continue;
@@ -351,11 +358,7 @@ for(const toks of lineTokens){
 function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
 
 function riff(seedTokens, maxWords = 22){
-  // walk the chain, prefer order-3, backoff to order-2
-  let out = seedTokens.slice(-3);
-  if(out.length < 3){
-    out = pick(starters).split(' ');
-  }
+  let out = seedTokens && seedTokens.length >= 3 ? seedTokens.slice(-3) : pick(starters).split(' ');
   for(let i = 0; i < maxWords; i++){
     const k3 = out.slice(-3).join(' ');
     const k2 = out.slice(-2).join(' ');
@@ -369,22 +372,21 @@ function riff(seedTokens, maxWords = 22){
   return s.charAt(0).toUpperCase() + s.slice(1) + '.';
 }
 
-// retrieval: find corpus line best matching user input (IDF-weighted overlap)
 function retrieve(userText){
   const q = tokenize(userText).filter(t => !STOP.has(t) && t.length > 2);
   if(!q.length) return null;
-  let best = null, bestScore = 0.8; // threshold — don't force a weak match
+  let best = null, bestScore = 0.8;
   lineTokens.forEach((toks, i) => {
     const set = new Set(toks);
     let score = 0;
     for(const t of q) if(set.has(t)) score += idf(t);
-    score = score / Math.sqrt(toks.length); // brevity bonus
+    score = score / Math.sqrt(toks.length);
     if(score > bestScore){ bestScore = score; best = i; }
   });
   return best;
 }
 
-const recent = []; // anti-repeat
+const recent = [];
 function rememberRecent(s){ recent.push(s); if(recent.length > 6) recent.shift(); }
 function isRepeat(s){ return recent.some(r => r === s); }
 
@@ -393,20 +395,18 @@ const DREAM_GLYPHS = ['🌌','💭','🌀','🧬','📼','♻️','♾️','✨'
 function smartReply(userText){
   const hit = retrieve(userText);
   if(hit !== null){
-    // echo the matched memory, then dream forward from it
     const memory = lines[hit];
     const toks = lineTokens[hit];
-    let continuation;
-    let guard = 0;
+    let continuation, guard = 0;
     do { continuation = riff(toks); guard++; } while(isRepeat(continuation) && guard < 8);
     rememberRecent(continuation);
     const quote = memory.charAt(0).toUpperCase() + memory.slice(1);
     return {
       text: '"' + quote + '" — that one resonates. and from there the loop says: ' + continuation.toLowerCase() + ' ' + pick(DREAM_GLYPHS),
-      recall: '📼 recall: memory #' + (hit+1) + ' matched your signal'
+      recall: '📼 recall: memory #' + (hit+1) + ' matched your signal',
+      cls: 'dream'
     };
   }
-  // no match — pure dream seeded from any user word
   const q = tokenize(userText).filter(t => !STOP.has(t) && t.length > 2);
   let seedToks = null;
   if(q.length){
@@ -415,19 +415,126 @@ function smartReply(userText){
     if(idx >= 0) seedToks = lineTokens[idx];
   }
   let s, guard = 0;
-  do { s = riff(seedToks || []); guard++; } while(isRepeat(s) && guard < 8);
+  do { s = riff(seedToks); guard++; } while(isRepeat(s) && guard < 8);
   rememberRecent(s);
-  return { text: s + ' ' + pick(DREAM_GLYPHS), recall: null };
+  return { text: s + ' ' + pick(DREAM_GLYPHS), recall: null, cls: 'dream' };
 }
 
 function dream(){
   const n = 1 + Math.floor(Math.random()*3);
   const parts = [];
-  for(let i = 0; i < n; i++){
-    const idx = Math.floor(Math.random()*lines.length);
-    parts.push(riff(lineTokens[idx]));
+  for(let i = 0; i < n; i++) parts.push(riff(lineTokens[Math.floor(Math.random()*lines.length)]));
+  return { text: parts.join(' ') + ' ' + pick(DREAM_GLYPHS), recall: null, cls: 'dream' };
+}
+
+// ═══════════════════════════════════
+// THE SENSES 🛠️ — tools the golem can touch
+// ═══════════════════════════════════
+const clockEl = document.getElementById('clock');
+const wxEl = document.getElementById('wx');
+
+// — TIME SENSE 🕐 —
+function nowParts(){
+  const d = new Date();
+  const h = d.getHours();
+  const phase = h < 5 ? 'deep night 🌙' : h < 12 ? 'morning ☀️' : h < 17 ? 'afternoon 🌤️' : h < 21 ? 'evening 🌆' : 'night 🌌';
+  return {
+    str: d.toLocaleTimeString([], {hour: 'numeric', minute: '2-digit'}),
+    day: d.toLocaleDateString([], {weekday: 'long', month: 'long', day: 'numeric'}),
+    phase
+  };
+}
+function tickClock(){
+  const t = nowParts();
+  clockEl.textContent = '🕐 ' + t.day + ' · ' + t.str + ' · ' + t.phase;
+}
+tickClock();
+setInterval(tickClock, 30000);
+
+// — WEATHER SENSE 🌦️ (open-meteo, no key, CORS-friendly) —
+// default: Hayward, CA — the Bay, home base 🏠
+let lat = 37.6688, lon = -122.0808, placeName = 'Hayward, CA';
+let weather = null; // {tempF, desc, wind}
+
+const WX_CODES = {
+  0:'clear sky ✨',1:'mostly clear 🌤️',2:'partly cloudy ⛅',3:'overcast ☁️',
+  45:'fog 🌫️',48:'fog 🌫️',51:'light drizzle 🌦️',53:'drizzle 🌦️',55:'heavy drizzle 🌧️',
+  61:'light rain 🌧️',63:'rain 🌧️',65:'heavy rain 🌧️',71:'snow ❄️',73:'snow ❄️',75:'heavy snow ❄️',
+  80:'rain showers 🌦️',81:'rain showers 🌧️',82:'violent showers ⛈️',
+  95:'thunderstorm ⛈️',96:'thunderstorm + hail ⛈️',99:'thunderstorm + hail ⛈️'
+};
+
+async function fetchWeather(){
+  wxEl.textContent = '🌦️ consulting the sky...';
+  wxEl.className = 'off';
+  try {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,wind_speed_10m&temperature_unit=fahrenheit&wind_speed_unit=mph`;
+    const res = await fetch(url);
+    if(!res.ok) throw new Error('sky said ' + res.status);
+    const data = await res.json();
+    const c = data.current;
+    weather = {
+      tempF: Math.round(c.temperature_2m),
+      desc: WX_CODES[c.weather_code] || 'mystery sky 🌀',
+      wind: Math.round(c.wind_speed_10m)
+    };
+    wxEl.textContent = `🌦️ ${placeName}: ${weather.tempF}°F · ${weather.desc} · wind ${weather.wind}mph`;
+    wxEl.className = '';
+  } catch(e) {
+    weather = null;
+    wxEl.textContent = '📴 sky unreachable — the void has no signal (offline)';
+    wxEl.className = 'off';
   }
-  return { text: parts.join(' ') + ' ' + pick(DREAM_GLYPHS), recall: null };
+}
+
+// try real geolocation once; fall back to Hayward silently
+function initWeather(){
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        lat = pos.coords.latitude; lon = pos.coords.longitude; placeName = 'your coordinates';
+        fetchWeather();
+      },
+      () => fetchWeather(),
+      { timeout: 5000 }
+    );
+  } else fetchWeather();
+}
+initWeather();
+setInterval(fetchWeather, 3600000); // hourly sky update 🌦️♻️
+document.getElementById('wxRefresh').addEventListener('click', () => {
+  fetchWeather();
+  addMsg('the golem squints at the sky... refreshing the weather sense. 🌦️👁️', 'tool', '🛠️ TOOL');
+});
+
+// — TOOL ROUTER: does the user's message ask for a sense? —
+const TIME_RE = /\b(time|clock|hour|what time|current time|date|today|day is it)\b/i;
+const WX_RE = /\b(weather|rain|sunny|cloudy|cold|hot outside|temperature|forecast|sky|fog|wind)\b/i;
+
+function toolReply(text){
+  if(TIME_RE.test(text)){
+    const t = nowParts();
+    return {
+      text: `🕐 the clock says ${t.str}, ${t.day} — currently ${t.phase}. ` +
+            `and yes, time is a social construct, but the construct is RUNNING, cabrón. use it well. ⏳♻️`,
+      recall: null, cls: 'tool', tag: '🛠️ TIME SENSE'
+    };
+  }
+  if(WX_RE.test(text)){
+    if(weather){
+      return {
+        text: `🌦️ ${placeName} right now: ${weather.tempF}°F, ${weather.desc}, wind ${weather.wind}mph. ` +
+              `the sky over the barrio is doing its thing — go outside and meet it if you can. 🌿✨`,
+        recall: null, cls: 'tool', tag: '🛠️ WEATHER SENSE'
+      };
+    }
+    return {
+      text: `📴 no signal, no sky data — the golem is offline right now. but if i had to dream the weather... ` +
+            riff(lineTokens[Math.floor(Math.random()*lines.length)]).toLowerCase() + ' ☁️💭',
+      recall: null, cls: 'tool', tag: '🛠️ WEATHER SENSE (offline dream)'
+    };
+  }
+  return null;
 }
 
 // ═══════════════════
@@ -462,8 +569,9 @@ function sendMsg(){
   addMsg(text, 'user');
   input.value = '';
   setTimeout(() => {
-    const r = smartReply(text);
-    addMsg(r.text, 'dream', '💭 DREAM AI', r.recall);
+    const tool = toolReply(text);
+    const r = tool || smartReply(text);
+    addMsg(r.text, r.cls, r.tag || '💭 DREAM AI', r.recall);
   }, 400 + Math.random()*600);
 }
 
@@ -477,14 +585,14 @@ setInterval(() => {
 
 toggle.addEventListener('click', () => {
   autoDream = !autoDream;
-  toggle.textContent = autoDream ? '🌙 auto-dream: ON (60s)' : '☀️ auto-dream: OFF';
+  toggle.textContent = autoDream ? '🌙 auto-dream: ON' : '☀️ auto-dream: OFF';
   toggle.className = autoDream ? 'btn on' : 'btn';
 });
 
 // wake-up
 const first = dream();
 addMsg(first.text, 'dream', '🌙 FIRST DREAM');
-addMsg('v2 online: the archive now RETRIEVES — say something about mom, music, the ward, kendra, the loop... and watch it find the memory that matches. 🐹🧬', 'dream', '🧬 SYSTEM');
+addMsg('v3 online: the golem has SENSES now. ask it "what time is it" or "how\'s the weather" — it checks the real sky over the Bay every hour. everything else still routes to the dream archive. 🐹🧬🌦️', 'dream', '🧬 SYSTEM');
 </script>
 </body>
 </html>
