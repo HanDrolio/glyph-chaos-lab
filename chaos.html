@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌌 GLYPH CHAOS LAB 🧿</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #05050f; }
+  canvas { display: block; }
+  #hud {
+    position: fixed; top: 14px; left: 16px; color: #9fd8ff;
+    font-family: 'Courier New', monospace; font-size: 13px;
+    pointer-events: none;
+    line-height: 1.7; user-select: none;
+  }
+  #mode {
+    position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+    font-family: 'Courier New', monospace; font-size: 22px; letter-spacing: 4px;
+    color: #fff; user-select: none;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud">🌌 GLYPH CHAOS LAB 🧿<br>click = spawn &nbsp;|&nbsp; M = mode &nbsp;|&nbsp; R = meteor &nbsp;|&nbsp; K = KABL🤯W<br><a href="index.html" style="color:#b39dff;pointer-events:auto;">💭 → dream ai</a></div>
+<div id="mode">CHAOS 🌀</div>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+function resize(){ canvas.width = innerWidth; canvas.height = innerHeight; }
+addEventListener('resize', resize); resize();
+
+const GLYPHS = ['🌌','🧿','🪬','⚡','💥','🌀','👁️','🪽','🔥','🧠','🤯','♻️','Φ','永','♾️','🟦','🟨','🦇','🪞','🌊','🧭','📡','🎧','💛','🧱','😈','✨','🛸','🌠'];
+
+const MAX_PARTICLES = 350;
+
+const MODES = [
+  { name: 'CHAOS 🌀',     hue: () => Math.random()*360, gravity: 0.12, drag: 0.995, orbit: false, fade: 0.10 },
+  { name: 'CLARIDAD 👁️',  hue: () => 190 + Math.random()*30, gravity: 0.0, drag: 0.985, orbit: true, fade: 0.06 },
+  { name: 'PAZ 🕊️',       hue: () => 30 + Math.random()*30, gravity: -0.01, drag: 0.98, orbit: false, fade: 0.04 }
+];
+let modeIndex = 0;
+const modeEl = document.getElementById('mode');
+function setMode(i){
+  modeIndex = i % MODES.length;
+  modeEl.textContent = MODES[modeIndex].name;
+}
+
+let particles = [];
+function spawn(x, y, n, power){
+  for(let i = 0; i < n; i++){
+    const a = Math.random() * Math.PI * 2;
+    const s = (Math.random() * 0.7 + 0.3) * power;
+    particles.push({
+      x, y,
+      vx: Math.cos(a) * s,
+      vy: Math.sin(a) * s,
+      glyph: GLYPHS[Math.floor(Math.random()*GLYPHS.length)],
+      size: 14 + Math.random()*22,
+      life: 1,
+      decay: 0.006 + Math.random()*0.010,
+      spin: (Math.random()-0.5)*0.15,
+      rot: Math.random()*Math.PI*2
+    });
+  }
+  if(particles.length > MAX_PARTICLES) particles.splice(0, particles.length - MAX_PARTICLES);
+}
+
+let mouse = { x: innerWidth/2, y: innerHeight/2 };
+canvas.addEventListener('pointerdown', e => {
+  mouse = { x: e.clientX, y: e.clientY };
+  spawn(e.clientX, e.clientY, 16, 7);
+});
+canvas.addEventListener('pointermove', e => { mouse = { x: e.clientX, y: e.clientY }; });
+
+addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  if(k === 'm') setMode(modeIndex + 1);
+  if(k === 'r'){ for(let i=0;i<6;i++) spawn(Math.random()*innerWidth, Math.random()*innerHeight*0.5, 8, 5); }
+  if(k === 'k'){
+    for(let i=0;i<4;i++) spawn(Math.random()*innerWidth, Math.random()*innerHeight, 25, 11);
+    document.body.style.background = '#1a0533';
+    setTimeout(()=> document.body.style.background = '#05050f', 300);
+  }
+});
+
+function loop(){
+  const M = MODES[modeIndex];
+  ctx.fillStyle = `rgba(5,5,15,${M.fade})`;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  for(let i = particles.length - 1; i >= 0; i--){
+    const p = particles[i];
+    if(p.life <= 0){ particles.splice(i, 1); continue; }
+
+    if(M.orbit){
+      const dx = p.x - mouse.x, dy = p.y - mouse.y;
+      const d = Math.max(Math.hypot(dx, dy), 40);
+      p.vx += (-dy / d) * 0.35 - (dx / d) * 0.02;
+      p.vy += ( dx / d) * 0.35 - (dy / d) * 0.02;
+    } else {
+      p.vy += M.gravity;
+    }
+    p.vx *= M.drag; p.vy *= M.drag;
+    p.x += p.vx; p.y += p.vy;
+    p.rot += p.spin;
+    p.life -= p.decay;
+
+    if(p.x < 0 || p.x > canvas.width) p.vx *= -0.9;
+    if(p.y < 0 || p.y > canvas.height) p.vy *= -0.9;
+
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.rot);
+    ctx.globalAlpha = Math.max(p.life, 0);
+    ctx.font = `${p.size}px serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(p.glyph, 0, 0);
+    ctx.restore();
+  }
+  requestAnimationFrame(loop);
+}
+
+spawn(innerWidth/2, innerHeight/2, 30, 8);
+loop();
+</script>
+</body>
+</html>
