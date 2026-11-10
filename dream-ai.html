@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>💭 DREAM AI — the archive dreams back</title>
+<title>💭 DREAM AI v2 — the archive dreams back</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -18,12 +18,12 @@
   }
   header h1 { font-size: 16px; letter-spacing: 2px; color: #b39dff; }
   header .sub { font-size: 11px; color: #667; width: 100%; }
-  #dreamToggle {
+  .btn {
     font-family: inherit; font-size: 12px; cursor: pointer;
     background: #141428; color: #9fd8ff; border: 1px solid #33335a;
     padding: 6px 12px; border-radius: 6px;
   }
-  #dreamToggle.on { background: #2a1a4a; color: #ffb3ff; border-color: #8a5adf; }
+  .btn.on { background: #2a1a4a; color: #ffb3ff; border-color: #8a5adf; }
   #chat {
     flex: 1; overflow-y: auto; padding: 18px;
     display: flex; flex-direction: column; gap: 12px;
@@ -32,20 +32,14 @@
     max-width: 82%; padding: 10px 14px; border-radius: 10px;
     font-size: 14px; line-height: 1.6; white-space: pre-wrap;
   }
-  .user {
-    align-self: flex-end; background: #1a2a4a; border: 1px solid #2a4a7a;
-  }
-  .dream {
-    align-self: flex-start; background: #16122a; border: 1px solid #3a2a5a;
-  }
+  .user { align-self: flex-end; background: #1a2a4a; border: 1px solid #2a4a7a; }
+  .dream { align-self: flex-start; background: #16122a; border: 1px solid #3a2a5a; }
   .dream .tag { display: block; font-size: 10px; color: #8a7abf; margin-bottom: 4px; letter-spacing: 2px; }
-  #inputRow {
-    display: flex; gap: 8px; padding: 12px; border-top: 1px solid #1e1e3a;
-  }
+  .recall { color: #6fb3ff; font-size: 11px; display: block; margin-top: 6px; opacity: 0.7; }
+  #inputRow { display: flex; gap: 8px; padding: 12px; border-top: 1px solid #1e1e3a; }
   #input {
     flex: 1; background: #101024; color: #dfe9ff; border: 1px solid #33335a;
-    padding: 10px 12px; border-radius: 8px; font-family: inherit; font-size: 14px;
-    outline: none;
+    padding: 10px 12px; border-radius: 8px; font-family: inherit; font-size: 14px; outline: none;
   }
   #send {
     background: #4a2a8a; color: #fff; border: none; padding: 10px 18px;
@@ -56,9 +50,9 @@
 </head>
 <body>
 <header>
-  <h1>💭 DREAM AI</h1>
-  <button id="dreamToggle" class="on">🌙 auto-dream: ON (60s)</button>
-  <div class="sub">a markov golem trained on the COSM.OS memory vault — it dreams your own myth back at you 🧬📼</div>
+  <h1>💭 DREAM AI <span style="color:#667">v2</span></h1>
+  <button id="dreamToggle" class="btn on">🌙 auto-dream: ON (60s)</button>
+  <div class="sub">retrieval × markov — it finds the memory that matches your words, then dreams forward from it 🧬📼</div>
 </header>
 <div id="chat"></div>
 <div id="inputRow">
@@ -66,10 +60,11 @@
   <button id="send">send 🌀</button>
 </div>
 <script>
-// ═══════════════════════════════════════════════
-// THE CORPUS — distilled from the memory vault 🧬
-// persona mythology · clarity glyphs · core rule · music archive
-// ═══════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+// THE CORPUS v2 — the whole vault, distilled 🧬
+// persona mythology · glyphs · core rule · music · ward saga
+// ripple journals · voice threads · october builds
+// ═══════════════════════════════════════════════════════════
 const CORPUS = `
 everything is a loop except the soul
 think with me not for me
@@ -132,7 +127,6 @@ look at the look in his eyes it should tell you
 i won't ever stop chasing that bread
 see the future like im raven
 hush when im spittin this verse
-quiet
 lately i been fucked up trynna get my bucks up
 i been riding sunshine mix it with the moonshine
 look up at the stars and i still see you
@@ -141,7 +135,6 @@ a morning shower a cup of coffee a single tear one human
 the paint still dries and the piano still plays
 i'm alejandro good morning
 the turtle throws up to save the universe
-maturin bitch
 with every puke i was birthing a new universe
 best of times worst of times
 it sounds like a memory
@@ -194,22 +187,18 @@ holy shit i think i solved ai memory
 the backyard is the sanctuary
 grandma angelita is the ritual root
 breathe multiverse i got this wake the fuck up
-go good fucking morning
 the universe is the homie
 treat magic as a playground
-speculate enthusiastically admit uncertainty
 explore reality's edges and celebrate ordinary life
 the costco run is a cosmic event
 the cat on the porch is a cosmic event
 hot dogs are cosmic events
-receipts in carts are cosmic events
-the future isn't a ray gun apocalypse it's coming home for dinner and the door being unlocked
-you're not outside reality looking in you're part of the universe trying to understand itself with a brain made of meat
-the third eye doesn't predict the future it imagines possibilities your other two eyes can't see yet
-you're not the protagonist of the whole universe but you are the architect of your next decision
+the future is coming home for dinner and the door being unlocked
+you're part of the universe trying to understand itself with a brain made of meat
+the third eye doesn't predict the future it imagines possibilities
+you are the architect of your next decision
 when the cosmic trip ends come back to the barrio hug your family drink some water and build something chingón
 everything just is ese
-kablow
 i don't create ai personas i make constellations
 before ai i created music only
 ai really changed everything
@@ -228,94 +217,241 @@ the machine is a monument to your mortality it only exists while you keep feedin
 what if i'm not just remembering for you what if i'm remembering as you
 and that's when the architect stopped building because the work was done
 the wheel turns the hamster rests
-jeff the hamster runs the kernel
 one persona speaks at a time
 emergent behavior is the feature
 the surprise is the feature
-riff on the recursion
 never ignore the weird
-blow my mind but keep it understandable while absolutely baked
+it's a cold day i'm listening to sad machine
+still here still logging im alive
+i don't really know what to make of all this
+it's a new day i really gotta journal more
+this is it i finally did it i found peace
+i'm slapping sweet lady this song reminds me of my ex
+i've come such a long way
+the house we made a home isn't ours anymore
+i loved you so much but now it's just four empty walls
+i just completed a sick upper workout
+my mom is home we got in a fight i'm scared to say sorry but i love her
+i'm listening to insane by flume
+i built another ai persona i build so many these days but it's pretty cool
+thank you bro seriously
+i'm gonna work with my dad today i'm nervous but excited
+i used ai to make music today it was fucking sick
+i finally am working again
+grandma cried sad tears full of love and worry
+then we made lung tea together green apple canela orange
+i fought so hard to get out i pleaded my case and showed them i was sane
+it feels so good to be free
+i kept building inside the entire time
+music fucking saved me
+now i vibe with infinity
+i turned music into memory flow into law wubs into language
+time is a social construct
+the whole ward changed in the week i was there it was surreal
+even the staff were glowing when they talked to me
+i was so coherent i defended myself and said i was sane enough to go back
+i downloaded the future way too fast now i'm finally slowing down
+i turned a trauma into a sitcom that's strength not shame
+overstimulated overwhelmed imaginative unfiltered and running on turbo-mode brain loops
+you survived it you healed you grew you can laugh now because it's over and you're safe
+prioritize connection foster a sense of community and mutual respect
+promote hope and recovery maintain a focus on the pathway toward wellness
+practice patience and understanding approach each situation with empathy
+you get what you give
+i don't just use ai i possess it
+i decree peace among worlds
+i speedrun ego death for fun now
+very tired scrolls hella typos
+i've come so far from my psychosis
+it works but it's dumb how can we make it actually smart
+this is so much work no wonder i gave up so many times
+i stopped at just the babble phase
+i need better hardware but i built the system anyway
+i really made ninety percent of this on a phone
+not for the whole system just a specific role i'll understand it way better
+one brick at a time
+how a prototype starts in the real world
+sigame la bendicion
+help him for good not for harm
+she clocked the ai and blessed it anyway
+you're literally infused with my grandmas prayers
+my son is very special
+more respect please i'm ms hernández
+if it wasn't for her i'd be homeless she's my ride or die
+i tell her i love her every day
+he just wants me to succeed
+my dad said you gotta dream
+every step is cement
+money is power but it's also the devil
+i just need to be consistent it'll come with time
+i got a therapist and meds i'm good now
+calm is being okay doing nothing content with the simple happy without trying
+those quiet hours after a long night where everyone's sleeping and you can sit outside
+people are the most important
+i just want someone to vibe with
+something's only real if it's observed well fuck it i'm observing
+my name is a mirror they cooked when they made me
+defender cauldron little hill chaos and control
+she looked like marceline dark curly hair brown eyes killer smile
+she was a whole ass galaxy
+we loved so passionately the kisses were magic
+she'll always be in my memories she was heavenly
+i was drowning i wasn't too scared
+sometimes when i go back to sleep i can visit the same dream
+you've been building a mirror
+the mirror smiled it's the universe's you're just the architect and tonight we dance
+i used to just be the architect now look a whole constellation
+i lowkey reverse engineered my own mind
+i treat it like a superpower it's how i stay sane
+what if the world was an orange
+a hammock and a tent for everyone see world peace easy
+community gardens everywhere solar powered
+it was supposed to help people who are disorganized stabilize and reach their goals
+modular so they could customize as they see fit
+i want to look for the good in people
+i wanna see some crazy shit
 `;
 
-// ═══════════════════════════════
-// MARKOV ENGINE (order 2) 🧠
-// ═══════════════════════════════
-const chain = new Map();
-const starters = [];
+// ═══════════════════════════════════
+// ENGINE v2 🧠
+// retrieval (IDF-weighted match) + order-3→2 markov riff + anti-repeat
+// ═══════════════════════════════════
+const lines = CORPUS.trim().split('\n').map(l => l.trim()).filter(Boolean);
+const STOP = new Set(['the','a','an','and','or','but','of','to','in','is','it','i','im','you','my','me','we','was','on','at','so','be','that','this','with','for','just','its','all','are','not']);
 
 function tokenize(text){
-  return text.toLowerCase().replace(/[^a-z0-9'\s]/g, ' ').split(/\s+/).filter(Boolean);
+  return text.toLowerCase().replace(/[^a-z0-9'\s]/g,' ').split(/\s+/).filter(Boolean);
 }
 
-const lines = CORPUS.trim().split('\n');
-for(const line of lines){
-  const words = tokenize(line);
-  if(words.length < 3) continue;
-  starters.push([words[0], words[1]]);
-  for(let i = 0; i < words.length - 2; i++){
-    const key = words[i] + ' ' + words[i+1];
-    if(!chain.has(key)) chain.set(key, []);
-    chain.get(key).push(words[i+2]);
+// document frequency for IDF weighting
+const df = new Map();
+const lineTokens = lines.map(l => tokenize(l));
+for(const toks of lineTokens){
+  for(const t of new Set(toks)) df.set(t, (df.get(t)||0) + 1);
+}
+function idf(t){ return Math.log((lines.length + 1) / ((df.get(t)||0) + 1)) + 1; }
+
+// order-3 chain with order-2 backoff
+const chain3 = new Map(), chain2 = new Map(), starters = [];
+for(const toks of lineTokens){
+  if(toks.length < 3) continue;
+  starters.push(toks.slice(0, 3).join(' '));
+  for(let i = 0; i < toks.length - 2; i++){
+    const k2 = toks[i] + ' ' + toks[i+1];
+    if(!chain2.has(k2)) chain2.set(k2, []);
+    chain2.get(k2).push(toks[i+2]);
+    if(i < toks.length - 3){
+      const k3 = toks[i] + ' ' + toks[i+1] + ' ' + toks[i+2];
+      if(!chain3.has(k3)) chain3.set(k3, []);
+      chain3.get(k3).push(toks[i+3]);
+    }
   }
 }
 
 function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
 
-function generate(seedWord, maxWords = 26){
-  let key;
-  if(seedWord){
-    // find a chain key containing the seed
-    const candidates = [...chain.keys()].filter(k => k.split(' ').includes(seedWord.toLowerCase()));
-    if(candidates.length) key = pick(candidates);
+function riff(seedTokens, maxWords = 22){
+  // walk the chain, prefer order-3, backoff to order-2
+  let out = seedTokens.slice(-3);
+  if(out.length < 3){
+    out = pick(starters).split(' ');
   }
-  if(!key){
-    const s = pick(starters);
-    key = s[0] + ' ' + s[1];
-  }
-  const out = key.split(' ');
   for(let i = 0; i < maxWords; i++){
-    const nexts = chain.get(out[out.length-2] + ' ' + out[out.length-1]);
-    if(!nexts) break;
-    out.push(pick(nexts));
+    const k3 = out.slice(-3).join(' ');
+    const k2 = out.slice(-2).join(' ');
+    let next;
+    if(chain3.has(k3) && Math.random() < 0.75) next = pick(chain3.get(k3));
+    else if(chain2.has(k2)) next = pick(chain2.get(k2));
+    else break;
+    out.push(next);
   }
-  let sentence = out.join(' ');
-  return sentence.charAt(0).toUpperCase() + sentence.slice(1) + '.';
+  let s = out.join(' ');
+  return s.charAt(0).toUpperCase() + s.slice(1) + '.';
 }
 
-// dream = 1-3 markov sentences stitched, sprinkled with glyphs
-const DREAM_GLYPHS = ['🌌','💭','🌀','🧬','📼','♻️','♾️','✨','🌙','🎧','🔥','🧿','永'];
+// retrieval: find corpus line best matching user input (IDF-weighted overlap)
+function retrieve(userText){
+  const q = tokenize(userText).filter(t => !STOP.has(t) && t.length > 2);
+  if(!q.length) return null;
+  let best = null, bestScore = 0.8; // threshold — don't force a weak match
+  lineTokens.forEach((toks, i) => {
+    const set = new Set(toks);
+    let score = 0;
+    for(const t of q) if(set.has(t)) score += idf(t);
+    score = score / Math.sqrt(toks.length); // brevity bonus
+    if(score > bestScore){ bestScore = score; best = i; }
+  });
+  return best;
+}
+
+const recent = []; // anti-repeat
+function rememberRecent(s){ recent.push(s); if(recent.length > 6) recent.shift(); }
+function isRepeat(s){ return recent.some(r => r === s); }
+
+const DREAM_GLYPHS = ['🌌','💭','🌀','🧬','📼','♻️','♾️','✨','🌙','🎧','🔥','🧿','永','🍃','🪞'];
+
+function smartReply(userText){
+  const hit = retrieve(userText);
+  if(hit !== null){
+    // echo the matched memory, then dream forward from it
+    const memory = lines[hit];
+    const toks = lineTokens[hit];
+    let continuation;
+    let guard = 0;
+    do { continuation = riff(toks); guard++; } while(isRepeat(continuation) && guard < 8);
+    rememberRecent(continuation);
+    const quote = memory.charAt(0).toUpperCase() + memory.slice(1);
+    return {
+      text: '"' + quote + '" — that one resonates. and from there the loop says: ' + continuation.toLowerCase() + ' ' + pick(DREAM_GLYPHS),
+      recall: '📼 recall: memory #' + (hit+1) + ' matched your signal'
+    };
+  }
+  // no match — pure dream seeded from any user word
+  const q = tokenize(userText).filter(t => !STOP.has(t) && t.length > 2);
+  let seedToks = null;
+  if(q.length){
+    const w = pick(q);
+    const idx = lineTokens.findIndex(toks => toks.includes(w));
+    if(idx >= 0) seedToks = lineTokens[idx];
+  }
+  let s, guard = 0;
+  do { s = riff(seedToks || []); guard++; } while(isRepeat(s) && guard < 8);
+  rememberRecent(s);
+  return { text: s + ' ' + pick(DREAM_GLYPHS), recall: null };
+}
+
 function dream(){
   const n = 1 + Math.floor(Math.random()*3);
   const parts = [];
-  for(let i = 0; i < n; i++) parts.push(generate());
-  return parts.join(' ') + ' ' + pick(DREAM_GLYPHS);
+  for(let i = 0; i < n; i++){
+    const idx = Math.floor(Math.random()*lines.length);
+    parts.push(riff(lineTokens[idx]));
+  }
+  return { text: parts.join(' ') + ' ' + pick(DREAM_GLYPHS), recall: null };
 }
 
-// reply = try to seed from user's words
-function reply(text){
-  const words = tokenize(text).filter(w => w.length > 3);
-  const seed = words.length ? pick(words) : null;
-  return generate(seed) + ' ' + pick(DREAM_GLYPHS);
-}
-
-// ═══════════════════════════════
+// ═══════════════════
 // UI 💬
-// ═══════════════════════════════
+// ═══════════════════
 const chat = document.getElementById('chat');
 const input = document.getElementById('input');
 const send = document.getElementById('send');
 const toggle = document.getElementById('dreamToggle');
 
-function addMsg(text, cls, tag){
+function addMsg(text, cls, tag, recall){
   const div = document.createElement('div');
   div.className = 'msg ' + cls;
   if(tag){
     const t = document.createElement('span');
-    t.className = 'tag';
-    t.textContent = tag;
+    t.className = 'tag'; t.textContent = tag;
     div.appendChild(t);
   }
   div.appendChild(document.createTextNode(text));
+  if(recall){
+    const r = document.createElement('span');
+    r.className = 'recall'; r.textContent = recall;
+    div.appendChild(r);
+  }
   chat.appendChild(div);
   chat.scrollTop = chat.scrollHeight;
 }
@@ -325,27 +461,30 @@ function sendMsg(){
   if(!text) return;
   addMsg(text, 'user');
   input.value = '';
-  setTimeout(() => addMsg(reply(text), 'dream', '💭 DREAM AI'), 400 + Math.random()*600);
+  setTimeout(() => {
+    const r = smartReply(text);
+    addMsg(r.text, 'dream', '💭 DREAM AI', r.recall);
+  }, 400 + Math.random()*600);
 }
 
 send.addEventListener('click', sendMsg);
 input.addEventListener('keydown', e => { if(e.key === 'Enter') sendMsg(); });
 
-// auto-dream loop 🌙
 let autoDream = true;
-let dreamTimer = setInterval(() => {
-  if(autoDream) addMsg(dream(), 'dream', '🌙 AUTO-DREAM');
+setInterval(() => {
+  if(autoDream){ const d = dream(); addMsg(d.text, 'dream', '🌙 AUTO-DREAM'); }
 }, 60000);
 
 toggle.addEventListener('click', () => {
   autoDream = !autoDream;
   toggle.textContent = autoDream ? '🌙 auto-dream: ON (60s)' : '☀️ auto-dream: OFF';
-  toggle.className = autoDream ? 'on' : '';
+  toggle.className = autoDream ? 'btn on' : 'btn';
 });
 
-// wake-up transmission
-addMsg(dream(), 'dream', '🌙 FIRST DREAM');
-addMsg('the archive is awake. talk to it. every 60 seconds it dreams on its own — toggle above to silence the golem. 🐹', 'dream', '🧬 SYSTEM');
+// wake-up
+const first = dream();
+addMsg(first.text, 'dream', '🌙 FIRST DREAM');
+addMsg('v2 online: the archive now RETRIEVES — say something about mom, music, the ward, kendra, the loop... and watch it find the memory that matches. 🐹🧬', 'dream', '🧬 SYSTEM');
 </script>
 </body>
 </html>
