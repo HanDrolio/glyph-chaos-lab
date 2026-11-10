@@ -12,9 +12,7 @@
     height: 100vh; display: flex; flex-direction: column;
     position: relative;
   }
-  #spiralCanvas {
-    position: fixed; inset: 0; z-index: 0; pointer-events: none;
-  }
+  #spiralCanvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
   header, #senseBar, #chat, #inputRow, #loadBar { position: relative; z-index: 1; }
   header {
     padding: 12px 18px; border-bottom: 1px solid #1e1e3a;
@@ -36,24 +34,15 @@
     border-bottom: 1px solid #1e1e3a; background: rgba(7,7,15,0.8);
     display: none;
   }
-  #loadBar .track {
-    height: 4px; background: #1e1e3a; border-radius: 2px; margin-top: 4px;
-    overflow: hidden;
-  }
-  #loadBar .fill {
-    height: 100%; background: linear-gradient(90deg,#8a5adf,#ff6adf);
-    width: 0%; transition: width 0.3s;
-  }
+  #loadBar .track { height: 4px; background: #1e1e3a; border-radius: 2px; margin-top: 4px; overflow: hidden; }
+  #loadBar .fill { height: 100%; background: linear-gradient(90deg,#8a5adf,#ff6adf); width: 0%; transition: width 0.3s; }
   #senseBar {
     padding: 6px 18px; font-size: 12px; color: #7fa8c9;
     border-bottom: 1px solid #1e1e3a; display: flex; gap: 16px; flex-wrap: wrap;
     background: rgba(7,7,15,0.8);
   }
   #senseBar .off { color: #555; }
-  #chat {
-    flex: 1; overflow-y: auto; padding: 18px;
-    display: flex; flex-direction: column; gap: 12px;
-  }
+  #chat { flex: 1; overflow-y: auto; padding: 18px; display: flex; flex-direction: column; gap: 12px; }
   .msg {
     max-width: 82%; padding: 10px 14px; border-radius: 10px;
     font-size: 14px; line-height: 1.6; white-space: pre-wrap;
@@ -83,22 +72,25 @@
 <body>
 <canvas id="spiralCanvas"></canvas>
 <header>
-  <h1>💭 DREAM AI <span style="color:#667">v4</span></h1>
+  <h1>💭 DREAM AI <span style="color:#667">v4.1</span></h1>
   <select id="modelPick" class="btn">
-    <option value="Llama-3.2-1B-Instruct-q4f16_1-MLC">🧠 llama-3.2-1B (fastest)</option>
-    <option value="Qwen2.5-1.5B-Instruct-q4f16_1-MLC">🧠 qwen-2.5-1.5B (smarter)</option>
+    <option value="Qwen2.5-0.5B-Instruct-q4f16_1-MLC">📱 qwen-0.5B (iPhone-safe)</option>
+    <option value="Llama-3.2-1B-Instruct-q4f16_1-MLC">🧠 llama-3.2-1B (desktop)</option>
+    <option value="Qwen2.5-1.5B-Instruct-q4f16_1-MLC">🧠 qwen-2.5-1.5B (desktop+)</option>
     <option value="Llama-3.2-3B-Instruct-q4f16_1-MLC">🧠 llama-3.2-3B (big boy, risky)</option>
   </select>
   <button id="loadBrain" class="btn">⬇️ load brain</button>
+  <button id="autoLoad" class="btn">🔁 auto-load: OFF</button>
   <button id="dreamToggle" class="btn on">🌙 auto-dream: ON</button>
   <button id="wxRefresh" class="btn">🌦️ sky</button>
-  <div class="sub">v4: a REAL model (WebLLM/WebGPU) dreaming with the vault as its memory · markov fallback if the brain won't load · 🌀 spiral = the pulse · <a href="chaos.html">glyph chaos toy →</a></div>
+  <button id="wipeChat" class="btn">🗑️</button>
+  <div class="sub">v4.1: chat survives crashes 💾 · auto-reload brain 🔁 · 0.5B iPhone-safe model 📱 · <a href="chaos.html">glyph chaos →</a></div>
 </header>
 <div id="loadBar"><span id="loadText">preparing...</span><div class="track"><div class="fill" id="loadFill"></div></div></div>
 <div id="senseBar">
   <span id="clock">🕐 ...</span>
   <span id="wx" class="off">🌦️ consulting the sky...</span>
-  <span id="brainState" class="off">🧠 brain: markov mode (no LLM loaded)</span>
+  <span id="brainState" class="off">🧠 brain: markov mode</span>
 </div>
 <div id="chat"></div>
 <div id="inputRow">
@@ -106,9 +98,7 @@
   <button id="send">send 🌀</button>
 </div>
 <script type="module">
-// ═══════════════════════════════════════════════════════════
-// THE CORPUS — the vault, distilled 🧬 (memory base for RAG)
-// ═══════════════════════════════════════════════════════════
+// ═══════════════ CORPUS 🧬 ═══════════════
 const CORPUS = `
 everything is a loop except the soul
 think with me not for me
@@ -294,9 +284,7 @@ i want to look for the good in people
 i wanna see some crazy shit
 `;
 
-// ═══════════════════════════════════
-// RETRIEVAL ENGINE (memory matcher) 🧬
-// ═══════════════════════════════════
+// ═══════════════ RETRIEVAL + MARKOV 🧬 ═══════════════
 const lines = CORPUS.trim().split('\n').map(l => l.trim()).filter(Boolean);
 const STOP = new Set(['the','a','an','and','or','but','of','to','in','is','it','i','im','you','my','me','we','was','on','at','so','be','that','this','with','for','just','its','all','are','not']);
 function tokenize(text){ return text.toLowerCase().replace(/[^a-z0-9'\s]/g,' ').split(/\s+/).filter(Boolean); }
@@ -304,20 +292,15 @@ const df = new Map();
 const lineTokens = lines.map(l => tokenize(l));
 for(const toks of lineTokens) for(const t of new Set(toks)) df.set(t, (df.get(t)||0) + 1);
 function idf(t){ return Math.log((lines.length + 1) / ((df.get(t)||0) + 1)) + 1; }
-
 function retrieveTop(userText, n = 3){
   const q = tokenize(userText).filter(t => !STOP.has(t) && t.length > 2);
   if(!q.length) return [];
-  const scored = lineTokens.map((toks, i) => {
-    const set = new Set(toks);
-    let score = 0;
+  return lineTokens.map((toks, i) => {
+    const set = new Set(toks); let score = 0;
     for(const t of q) if(set.has(t)) score += idf(t);
     return [score / Math.sqrt(toks.length), i];
-  }).filter(([s]) => s > 0.8).sort((a,b) => b[0]-a[0]);
-  return scored.slice(0, n).map(([,i]) => i);
+  }).filter(([s]) => s > 0.8).sort((a,b) => b[0]-a[0]).slice(0, n).map(([,i]) => i);
 }
-
-// markov fallback
 const chain2 = new Map(), starters = [];
 for(const toks of lineTokens){
   if(toks.length < 3) continue;
@@ -341,9 +324,7 @@ function riff(seedTokens, maxWords = 22){
 }
 const DREAM_GLYPHS = ['🌌','💭','🌀','🧬','📼','♻️','♾️','✨','🌙','🎧','🔥','🧿','永','🍃','🪞'];
 
-// ═══════════════════════════════════
-// THE SENSES 🛠️ (time + weather)
-// ═══════════════════════════════════
+// ═══════════════ SENSES 🛠️ ═══════════════
 const clockEl = document.getElementById('clock');
 const wxEl = document.getElementById('wx');
 function nowParts(){
@@ -395,17 +376,12 @@ function senseContext(){
   return s;
 }
 
-// ═══════════════════════════════════
-// 🌀 THE SPIRAL — breathing vortex + orbiting planets
-// ═══════════════════════════════════
+// ═══════════════ 🌀 THE SPIRAL ═══════════════
 const sc = document.getElementById('spiralCanvas');
 const sctx = sc.getContext('2d');
 function scResize(){ sc.width = innerWidth; sc.height = innerHeight; }
 addEventListener('resize', scResize); scResize();
-
-let pulse = 0;
-let spin = 0;
-let thinking = false;
+let pulse = 0, spin = 0, thinking = false;
 const PLANETS = [
   { r: 60,  speed: 0.4,  size: 5, glyph: '🟦', off: 0 },
   { r: 95,  speed: -0.3, size: 7, glyph: '🟡', off: 2.1 },
@@ -419,7 +395,6 @@ function drawSpiral(){
   const speed = thinking ? 2.6 : 1;
   spin += 0.004 * speed;
   pulse += 0.015 * speed;
-
   sctx.save();
   sctx.translate(cx, cy);
   sctx.rotate(spin);
@@ -432,13 +407,11 @@ function drawSpiral(){
       const x = r * Math.cos(t), y = r * Math.sin(t);
       i === 0 ? sctx.moveTo(x, y) : sctx.lineTo(x, y);
     }
-    const alpha = thinking ? 0.35 : 0.16;
-    sctx.strokeStyle = `rgba(138, 90, 223, ${alpha})`;
+    sctx.strokeStyle = `rgba(138, 90, 223, ${thinking ? 0.35 : 0.16})`;
     sctx.lineWidth = 1.5;
     sctx.stroke();
   }
   sctx.restore();
-
   sctx.save();
   sctx.translate(cx, cy);
   for(const p of PLANETS){
@@ -461,15 +434,32 @@ function drawSpiral(){
 }
 drawSpiral();
 
-// ═══════════════════════════════════
-// 🧠 WEBLLM — the real brain (lazy-loaded)
-// ═══════════════════════════════════
+// ═══════════════ 💾 CHAT PERSISTENCE — survives tab crashes ═══════════════
+const CHAT_KEY = 'dreamai_chat_v1';
+const AUTOLOAD_KEY = 'dreamai_autoload_v1';
+const MAX_SAVED = 100;
+let chatLog = [];
+try { chatLog = JSON.parse(localStorage.getItem(CHAT_KEY) || '[]'); } catch(e) { chatLog = []; }
+function saveChat(){
+  try { localStorage.setItem(CHAT_KEY, JSON.stringify(chatLog.slice(-MAX_SAVED))); } catch(e) {}
+}
+
+// ═══════════════ 🧠 WEBLLM ═══════════════
 let engine = null, brainReady = false, brainLoading = false;
 const brainState = document.getElementById('brainState');
 const loadBar = document.getElementById('loadBar');
 const loadText = document.getElementById('loadText');
 const loadFill = document.getElementById('loadFill');
 const loadBtn = document.getElementById('loadBrain');
+const autoLoadBtn = document.getElementById('autoLoad');
+let autoLoad = localStorage.getItem(AUTOLOAD_KEY) === '1';
+function paintAutoLoad(){ autoLoadBtn.textContent = autoLoad ? '🔁 auto-load: ON' : '🔁 auto-load: OFF'; autoLoadBtn.className = autoLoad ? 'btn on' : 'btn'; }
+paintAutoLoad();
+autoLoadBtn.addEventListener('click', () => {
+  autoLoad = !autoLoad;
+  localStorage.setItem(AUTOLOAD_KEY, autoLoad ? '1' : '0');
+  paintAutoLoad();
+});
 
 async function loadBrain(){
   if(brainLoading || brainReady) return;
@@ -477,6 +467,7 @@ async function loadBrain(){
   loadBtn.disabled = true;
   loadBar.style.display = 'block';
   const modelId = document.getElementById('modelPick').value;
+  brainState.textContent = '🧠 brain: loading ' + modelId.split('-Instruct')[0] + '...';
   try {
     const webllm = await import('https://esm.run/@mlc-ai/web-llm');
     engine = await webllm.CreateMLCEngine(modelId, {
@@ -488,11 +479,11 @@ async function loadBrain(){
     brainReady = true;
     brainState.textContent = '🧠 brain: ' + modelId.split('-Instruct')[0] + ' LIVE 🔥';
     brainState.className = '';
-    loadText.textContent = '✅ brain loaded — the golem has a real mind now';
+    loadText.textContent = '✅ brain loaded';
     loadBtn.textContent = '🧠 loaded';
-    addMsg('...whoa. the static cleared. i can feel the WHOLE archive now — not just the echoes, the actual weave. ask me anything, Architect. 🧠🌌', 'dream', '💭 DREAM AI (LLM online)');
+    addMsg('...whoa. the static cleared. i can feel the WHOLE archive now. ask me anything, Architect. 🧠🌌', 'dream', '💭 DREAM AI (LLM online)');
   } catch(e) {
-    brainState.textContent = '🧠 brain: LLM failed (WebGPU missing?) — markov mode continues 💪';
+    brainState.textContent = '🧠 brain: LLM failed (WebGPU/memory?) — markov mode 💪';
     loadText.textContent = '⚠️ brain load failed: ' + (e.message || e) + ' — markov fallback active';
     loadBtn.textContent = '🔁 retry brain';
     loadBtn.disabled = false;
@@ -512,9 +503,7 @@ async function llmReply(userText, memoryIdxs){
     temperature: 0.9, max_tokens: 160, stream: true
   });
   let full = '';
-  for await (const chunk of chunks){
-    full += chunk.choices[0]?.delta?.content || '';
-  }
+  for await (const chunk of chunks) full += chunk.choices[0]?.delta?.content || '';
   return full.trim() || riff();
 }
 
@@ -530,15 +519,13 @@ async function llmDream(){
   return full.trim() || riff();
 }
 
-// ═══════════════════
-// UI 💬
-// ═══════════════════
+// ═══════════════ UI 💬 ═══════════════
 const chat = document.getElementById('chat');
 const input = document.getElementById('input');
 const send = document.getElementById('send');
 const toggle = document.getElementById('dreamToggle');
 
-function addMsg(text, cls, tag, recall){
+function addMsg(text, cls, tag, recall, skipSave){
   const div = document.createElement('div');
   div.className = 'msg ' + cls;
   if(tag){ const t = document.createElement('span'); t.className = 'tag'; t.textContent = tag; div.appendChild(t); }
@@ -546,8 +533,23 @@ function addMsg(text, cls, tag, recall){
   if(recall){ const r = document.createElement('span'); r.className = 'recall'; r.textContent = recall; div.appendChild(r); }
   chat.appendChild(div);
   chat.scrollTop = chat.scrollHeight;
+  if(!skipSave){ chatLog.push({ text, cls, tag, recall }); saveChat(); }
   return div;
 }
+
+// restore the dead tab's memories ♻️
+let restored = 0;
+for(const m of chatLog){
+  if(m.cls && m.text){ addMsg(m.text, m.cls, m.tag, m.recall, true); restored++; }
+}
+if(restored > 0){
+  addMsg('♻️ session restored from storage — the tab may have died, but the conversation didn\'t. welcome back. 🐹', 'tool', '🛠️ SYSTEM', null, true);
+}
+
+document.getElementById('wipeChat').addEventListener('click', () => {
+  chatLog = []; saveChat(); chat.innerHTML = '';
+  addMsg('🗑️ archive wiped clean. fresh void, fresh dreams.', 'tool', '🛠️ SYSTEM');
+});
 
 let busy = false;
 async function sendMsg(){
@@ -562,7 +564,7 @@ async function sendMsg(){
   busy = true; thinking = true;
   const memIdxs = retrieveTop(text);
   const recallNote = memIdxs.length ? '📼 fed ' + memIdxs.length + ' archive memories into the brain' : null;
-  const thinkingBubble = addMsg('🌀 dreaming...', 'dream thinking', '💭 DREAM AI');
+  const thinkingBubble = addMsg('🌀 dreaming...', 'dream thinking', '💭 DREAM AI', null, true);
 
   try {
     let replyText;
@@ -596,7 +598,7 @@ setInterval(async () => {
     if(brainReady) d = await llmDream();
     else { d = riff() + ' ' + riff() + ' ' + pick(DREAM_GLYPHS); await new Promise(r => setTimeout(r, 300)); }
     addMsg(d, 'dream', '🌙 AUTO-DREAM');
-  } catch(e) { /* dreams fail quietly */ }
+  } catch(e) {}
   busy = false; thinking = false;
 }, 60000);
 
@@ -607,8 +609,13 @@ toggle.addEventListener('click', () => {
 });
 
 // wake-up
-addMsg(riff() + ' ' + riff() + ' ' + pick(DREAM_GLYPHS), 'dream', '🌙 FIRST DREAM');
-addMsg('v4 online. right now i\'m a markov ghost — hit "⬇️ load brain" to give me a REAL model (one-time download, cached forever, runs 100% in your browser via WebGPU). watch the spiral breathe while i think. 🌀🪐', 'dream', '🧬 SYSTEM');
+if(restored === 0){
+  addMsg(riff() + ' ' + riff() + ' ' + pick(DREAM_GLYPHS), 'dream', '🌙 FIRST DREAM');
+  addMsg('v4.1 online. on iPhone? pick 📱 qwen-0.5B — the 1B model makes iOS murder the tab (that\'s your mystery refresh). flip 🔁 auto-load ON and the brain resurrects itself after every crash. chat now survives reloads. 💾🌀', 'dream', '🧬 SYSTEM');
+}
+
+// auto-resurrect the brain if enabled
+if(autoLoad && !brainReady){ setTimeout(loadBrain, 800); }
 </script>
 </body>
 </html>
