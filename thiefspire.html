@@ -299,6 +299,25 @@ canvas.sprite{width:min(95%,112px);max-height:min(100%,155px);filter:drop-shadow
 @media(max-width:345px){#enemy-side canvas.sprite{width:145px}#player-side canvas.sprite{width:106px}}
 @media(prefers-reduced-motion:reduce){.fighter .sprite,.fighter.lunge,.fighter.hit{animation:none!important}}
 
+
+/* SIMPLE MAP: just a 12-row icon track, no long duplicate route cards */
+.map-instruction{margin:7px 0 10px!important;font:12px/1.4 system-ui,sans-serif!important;color:#e5d7b6!important}
+.map-instruction strong{color:#ffe9a4}
+.map-icon-legend{font:700 11px/1.55 system-ui,sans-serif;color:#c5c8b7;margin:9px 0 0;text-align:center}
+.route-board{max-height:min(330px,43dvh);padding:6px 8px;background:linear-gradient(145deg,#16252f,#182b2c);border:2px solid #a68c6b}
+.route-row{grid-template-columns:28px repeat(3,minmax(0,1fr));gap:7px;padding:4px 3px;min-height:46px}
+.route-node{min-height:37px;border:1px solid #586e68;padding:3px 3px;justify-content:center;display:flex;flex-direction:column;gap:1px;align-items:center;appearance:none;text-align:center;font-family:system-ui,sans-serif}
+.route-node span{font-size:21px;line-height:1.12}
+.route-node small{font-size:9px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.route-node.playable{min-height:46px;border:2px solid #ffda7f;background:linear-gradient(#5b553b,#3c4639);color:#fff4cf;box-shadow:0 0 14px #ffda6b6b,inset 0 0 0 1px #eec68e5c;cursor:pointer;animation:map-node-beacon 2s ease-in-out infinite}
+.route-node.playable:active{transform:scale(.93);background:#7d6947}
+.route-node.playable:focus-visible{outline:3px solid #a4edcd;outline-offset:2px}
+.route-node.playable span{font-size:26px}
+.route-row.row-next{background:#c7a36b24;border:1px solid #ffdc8a8f}
+.route-row.row-next .route-number{font-size:13px;color:#ffe9a5}
+@keyframes map-node-beacon{0%,100%{box-shadow:0 0 7px #e7b86a44}50%{box-shadow:0 0 16px #ffdd897c}}
+@media(max-height:690px){.route-board{max-height:min(270px,40dvh)}.route-row{min-height:41px}.route-node.playable{min-height:42px}}
+@media(prefers-reduced-motion:reduce){.route-node.playable{animation:none}}
 </style>
 </head>
 <body>
@@ -450,9 +469,9 @@ var RoomMenu={
 var RoomInfo={
 battle:["⚔️","Guarded Passage","Fight a patrol for loot and a new card."],
 elite:["💀","Elite Challenge","A dangerous champion, richer spoils."],
-event:["🎲","Strange Encounter","A D&D-style story choice with a d20 check."],
-treasure:["🎁","Locked Treasury","One chest, one decision, no second takes."],
-merchant:["🛍️","Black Market","Buy a card, relic, or healing potion."],
+event:["❓","Strange Encounter","A D&D-style story choice with a d20 check."],
+treasure:["💰","Locked Treasury","One chest, one decision, no second takes."],
+merchant:["🛒","Black Market","Buy a card, relic, or healing potion."],
 camp:["🔥","Safe Campfire","Heal, improve a card, or study lore."],
 boss:["👑","The Golden Warden","The final vault is guarded by the king's monster."]
 };
@@ -818,9 +837,9 @@ function choice(icon,title,desc,action,disabled){
 function renderRouteBoard(inspection){
  var act=Math.max(1,Math.min(3,mapViewAct||currentAct(s.floor+1))),begin=(act-1)*ACT_LENGTH+1,end=act*ACT_LENGTH;
  var done=s.routeHistory||[],next=s.floor+1;
- var out='<div class="act-tabs" role="group" aria-label="Select act">';
- for(var tab=1;tab<=3;tab++)out+='<button class="act-tab'+(tab===act?' active':'')+'" data-action="viewact:'+tab+'">ACT '+["I","II","III"][tab-1]+'</button>';
- out+='</div><div class="act-map-heading">'+actName(act)+' · FLOORS '+begin+'–'+end+'</div>';
+ var out=inspection?'<div class="act-tabs" role="group" aria-label="Select act">':'';
+ if(inspection){for(var tab=1;tab<=3;tab++)out+='<button class="act-tab'+(tab===act?' active':'')+'" data-action="viewact:'+tab+'">ACT '+["I","II","III"][tab-1]+'</button>';out+='</div>'}
+ out+='<div class="act-map-heading">'+actName(act)+' · FLOORS '+begin+'–'+end+'</div>';
  out+='<div class="route-board" role="group" aria-label="Act '+act+': twelve dungeon floors, three chamber lanes each">';
  for(var floor=begin;floor<=end;floor++){
   var current=floor===next&&s.mode==="map";
@@ -831,8 +850,9 @@ function renderRouteBoard(inspection){
    var chosen=past&&past.lane===room.lane,missed=past&&!chosen;
    var kindClass=current?' future-option':floor<next?' old-option':' locked-option';
    var label=room.title+' · Floor '+floor+(chosen?' · VISITED':current?' · AVAILABLE':'');
-   out+='<div class="route-node'+kindClass+(chosen?' selected-node':'')+(missed?' missed-node':'')+'" title="'+label.replace(/"/g,"&quot;")+'" aria-label="'+label.replace(/"/g,"&quot;")+'">'+
-      '<span>'+room.icon+'</span><small>'+room.title+'</small>'+(chosen?'<b class="route-tick">✓</b>':'')+'</div>'
+   var playable=current&&!inspection,tag=playable?"button":"div",attrs=playable?' type="button" data-action="room:'+room.lane+'"':'';
+   out+='<'+tag+attrs+' class="route-node'+kindClass+(playable?' playable':'')+(chosen?' selected-node':'')+(missed?' missed-node':'')+'" title="'+label.replace(/"/g,"&quot;")+'" aria-label="'+(playable?'Enter ':'')+label.replace(/"/g,"&quot;")+'">'+
+      '<span>'+room.icon+'</span><small>'+room.title+'</small>'+(chosen?'<b class="route-tick">✓</b>':'')+'</'+tag+'>'
   });
   out+='</div>'
  }
@@ -862,9 +882,10 @@ function renderModal(){
   h+=choice("🎭","THE CHARLATAN","Cunning 2 · Grit 1 · Lore 3 · Start with Flash Powder","origin:charlatan").replace('class="choice"','class="choice class-choice"').replace('<span class="icon">🎭</span>','<canvas width="64" height="64" class="class-pixel" data-rogue="charlatan"></canvas>');
   h+='</div>';
  }else if(s.mode==="map"){
-  h='<div class="modaleyebrow">ACT '+currentAct(s.floor+1)+' / 3 · FLOOR '+currentTier(s.floor+1)+' / 12</div><h2>Pick Your Path</h2><p>'+s.log+'<br>One room per floor. Three ways forward. 36 total floors.</p><div class="choices">';
-  (s.tower[s.floor+1]||[]).forEach(function(room){h+=choice(room.icon,room.title,room.desc,"room:"+room.lane)});
-  h+='</div><div class="map-caption">🗺️ CAMPAIGN · 3 ACTS × 12 FLOORS × 3 LANES</div>'+renderRouteBoard(false);
+  h='<div class="modaleyebrow">ACT '+currentAct(s.floor+1)+' · FLOOR '+currentTier(s.floor+1)+'/12</div><h2>Choose a Room</h2>';
+  h+='<p class="map-instruction">👆 Tap one of the <strong>three glowing icons</strong> on the highlighted floor. No extra menus.</p>';
+  h+=renderRouteBoard(false);
+  h+='<div class="map-icon-legend">⚔️ Fight · 💀 Elite · 💰 Loot · 🛒 Shop · 🔥 Rest · ❓ Mystery · 👑 Boss</div>';
  }else if(s.mode==="reward"){
   h='<div class="modaleyebrow">VICTORY · FLOOR '+s.floor+'</div><h2>Claim Your Spoils</h2><p>'+s.lootText+'<br>Add one card to your deck.</p><div class="choices">';
   (s.rewardChoices||[]).forEach(function(key){var c=Card[key];if(c)h+=choice(c.icon,c.name,c.cost+" ENERGY · "+c.desc,"reward:"+key)});
@@ -909,6 +930,10 @@ function renderModal(){
  }else h='<h2>The Ring Waits</h2><button class="action" data-action="restart">NEW RUN</button>';
  box.innerHTML=h;
  if(s.mode==="origin"&&typeof box.querySelectorAll==="function")box.querySelectorAll("canvas[data-rogue]").forEach(function(canvas){sprite(canvas,canvas.getAttribute("data-rogue"))});
+ if(s.mode==="map"&&!modalState&&typeof box.querySelector==="function"){
+  var scroller=box.querySelector(".route-board"),nextRow=box.querySelector(".row-next");
+  if(scroller&&nextRow)scroller.scrollTop=Math.max(0,nextRow.offsetTop-scroller.offsetTop-scroller.clientHeight*.48)
+ }
 }
 
 
