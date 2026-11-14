@@ -1,0 +1,1057 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#101b25">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>THIEFSPIRE II · The Ring Remembers</title>
+<style>
+:root{--ink:#eceddf;--mute:#aab3ae;--dark:#101922;--panel:#15232a;--edge:#53695f;--mint:#9ec5aa;--gold:#ecd18d;--red:#e98d80;--blue:#85becd;--font:Georgia,"Times New Roman",serif}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;margin:0;background:#0b141b;color:var(--ink)}
+body{font-family:var(--font);touch-action:pan-x}
+button{font:inherit;cursor:pointer}
+button:focus-visible,.card:focus-visible{outline:3px solid #f5d78b;outline-offset:3px}
+#game{width:min(100%,510px);height:100dvh;margin:auto;display:flex;flex-direction:column;overflow:hidden;position:relative;border-inline:1px solid #3c534a;background:linear-gradient(#12232a,#182c2b 45%,#0d1721);box-shadow:0 0 120px #000a}
+#top{padding:calc(11px + env(safe-area-inset-top)) 14px 8px;background:linear-gradient(#172c32,#15242b);border-bottom:3px solid #789083;z-index:2}
+.topline,.lootline,.arena-head,.hudline,.handhead,.footline,.statline{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.brand{font-weight:900;font-size:clamp(17px,4.7vw,24px);letter-spacing:.11em;color:#e5dbc1;text-shadow:2px 2px #314545}
+.subtitle{font:700 10px system-ui,sans-serif;letter-spacing:.18em;color:#a1bbb5;margin-top:2px}
+.floor,.coins{font:800 11px system-ui,sans-serif;white-space:nowrap;color:#e7d49b}
+.lootline{padding-top:11px;align-items:flex-start}
+.loottitle{color:#d6e0cd;font:700 11px system-ui,sans-serif;letter-spacing:.13em;text-transform:uppercase;padding:5px 0}
+#relics{flex:1;display:flex;flex-wrap:wrap;gap:5px;min-height:28px}
+.relic{height:29px;min-width:29px;padding:2px 5px;background:#334840;border:1px solid #78938a;border-radius:6px;display:grid;place-items:center;font-size:17px}
+.empty-relic{font:italic 11px system-ui,sans-serif;color:#849b91;padding:5px 0}
+.mini{border:1px solid #6b857b;border-radius:6px;background:#243b3a;color:#dce8dd;padding:6px 10px;font:700 11px system-ui,sans-serif}
+#arena{flex:1;min-height:0;position:relative;display:flex;flex-direction:column;overflow:hidden;background:radial-gradient(ellipse at center 42%,#435b53 0%,#21393b 39%,#10202b 82%)}
+#arena:before{content:"";pointer-events:none;position:absolute;inset:0;opacity:.18;background:repeating-linear-gradient(90deg,transparent 0 27px,#09151a 27px 29px,transparent 29px 56px),repeating-linear-gradient(0deg,transparent 0 38px,#07171d 38px 40px,transparent 40px 80px);mask-image:linear-gradient(#000,transparent 65%)}
+#arena:after{content:"";position:absolute;left:0;right:0;bottom:0;height:26%;pointer-events:none;background:linear-gradient(transparent,#13252a 70%,#17262b)}
+.arena-head{position:relative;z-index:1;padding:10px 14px 4px;font:700 10px system-ui,sans-serif;color:#b5c8bf;letter-spacing:.12em}
+#encounter-name{font-size:11px;color:#e7ddb9}
+#fighters{flex:1;min-height:0;position:relative;z-index:1;display:grid;grid-template-columns:1fr 1fr;align-items:end;gap:2px;padding:5px 10px 16px}
+.fighter{position:relative;min-width:0;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.sprite-wrap{position:relative;width:100%;display:flex;align-items:flex-end;justify-content:center;min-height:0;flex:1}
+.sprite-wrap:before{content:"";position:absolute;bottom:3px;width:73%;height:16px;border-radius:50%;background:#06121788;filter:blur(4px)}
+canvas.sprite{width:min(100%,164px);max-height:100%;height:auto;aspect-ratio:1;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(3px 8px 0 #08141b65)}
+.name{font-weight:900;font-size:clamp(13px,3.6vw,17px);letter-spacing:.02em;color:#f6e7c3;text-shadow:1px 2px #13202a;margin-bottom:4px}
+.healthbar{height:11px;width:94%;max-width:175px;background:#391f26;border:2px solid #92a193;border-radius:4px;overflow:hidden;position:relative;box-shadow:0 1px #0c1417}
+.healthbar>span{height:100%;display:block;background:linear-gradient(90deg,#aa544a,#e88771);transition:width .25s}
+.statline{width:94%;max-width:175px;margin:3px 0;color:#ebeddd;font:800 11px system-ui,sans-serif}
+.statuses{min-height:23px;width:100%;display:flex;justify-content:center;align-items:center;gap:3px;flex-wrap:wrap}
+.status{font:700 10px system-ui,sans-serif;border:1px solid #768278;background:#263b3e;padding:3px 5px;border-radius:4px;white-space:nowrap}
+.intent{position:absolute;top:2px;left:50%;transform:translateX(-50%);max-width:100%;white-space:nowrap;background:#192b33e8;border:1px solid #8a9183;color:#f4dbb5;padding:5px 8px;border-radius:7px;font:800 10px system-ui,sans-serif;z-index:2;box-shadow:0 3px 0 #0b1b20}
+#battlelog{position:relative;z-index:2;min-height:29px;padding:7px 14px;font:italic 12px var(--font);text-align:center;color:#d4d9c5;background:#17282ad9;border-top:1px solid #526f66}
+#hand-section{background:linear-gradient(#1a2930,#101b24);border-top:3px solid #a5bba4;flex:none;min-height:0;padding:8px 0 calc(10px + env(safe-area-inset-bottom))}
+.handhead{padding:0 13px 9px}
+.energy{font:900 14px system-ui,sans-serif;color:#eddaa0;white-space:nowrap}
+.energy strong{font-size:22px}
+.deckinfo{font:700 10px system-ui,sans-serif;color:#9cafaa;white-space:nowrap}
+#endturn{padding:9px 13px;border:2px solid #d4c39c;border-radius:8px;color:#1b2c29;background:#e7c784;font:900 12px system-ui,sans-serif;box-shadow:0 3px #927d58;white-space:nowrap}
+#endturn:disabled{opacity:.45;filter:grayscale(.5)}
+#hand{height:clamp(167px,26dvh,226px);display:flex;align-items:stretch;overflow-x:auto;overflow-y:hidden;gap:9px;padding:0 13px 8px;scroll-snap-type:x proximity;scrollbar-width:none}
+#hand::-webkit-scrollbar{display:none}
+.card{position:relative;flex:0 0 clamp(122px,32vw,152px);scroll-snap-align:start;border:3px solid #bbc9b4;border-radius:12px;background:linear-gradient(145deg,#344b46,#24393a);display:flex;flex-direction:column;align-items:center;padding:11px 8px 8px;color:#f2ead4;text-align:center;box-shadow:0 4px 0 #08161b,0 0 0 1px #10221e inset;transition:transform .12s,opacity .12s;user-select:none}
+.card.attack{border-color:#d19d8a;background:linear-gradient(145deg,#594242,#322c38)}
+.card.skill{border-color:#8dc0bd;background:linear-gradient(145deg,#2e5052,#25363f)}
+.card.power{border-color:#e8d08d;background:linear-gradient(145deg,#635843,#363b3b)}
+.card:active{transform:translateY(4px) scale(.97)}
+.card.off{opacity:.44}
+.card .cost{position:absolute;left:-6px;top:-7px;border:2px solid #cfecdd;width:29px;height:29px;display:grid;place-items:center;background:#236579;border-radius:50%;font:900 14px system-ui,sans-serif;color:#fff}
+.card .glyph{font-size:33px;line-height:1.2;margin-top:12px;filter:drop-shadow(0 3px #0a151a)}
+.card .title{font:bold 15px var(--font);margin-top:10px;line-height:1.07}
+.card .desc{font:11px/1.3 system-ui,sans-serif;color:#dee2d3;margin:auto 0;max-width:100%}
+.card .type{font:800 9px system-ui,sans-serif;letter-spacing:.14em;color:#d3d1bc}
+.card .up{position:absolute;right:5px;top:4px;color:#f7d578;font:900 13px system-ui,sans-serif}
+#foot{padding:5px 14px 0;color:#8fa49b;font:10px system-ui,sans-serif;text-align:center;letter-spacing:.04em}
+.float{position:absolute;left:50%;top:45%;z-index:12;pointer-events:none;color:#ffeabc;font:900 22px system-ui,sans-serif;text-shadow:2px 2px #000;animation:floatup .75s forwards}
+.float.red{color:#ff9c88}.float.green{color:#a7e2b6}
+@keyframes floatup{from{opacity:1;transform:translate(-50%,0) scale(.8)}to{opacity:0;transform:translate(-50%,-57px) scale(1.25)}}
+#modal{display:none;position:absolute;inset:0;z-index:20;background:#07121ddd;backdrop-filter:blur(5px);padding:calc(25px + env(safe-area-inset-top)) 18px calc(20px + env(safe-area-inset-bottom));align-items:center;justify-content:center}
+#modal.show{display:flex}
+.modalbox{width:100%;max-height:100%;overflow-y:auto;border:3px solid #9bb5a2;border-radius:15px;background:linear-gradient(150deg,#254047,#101d29);padding:18px 15px 20px;box-shadow:0 10px 0 #081218,0 20px 45px #000b}
+.modalbox h2{font-size:27px;color:#f1d995;text-align:center;letter-spacing:.03em;margin:7px 0 8px}
+.modalbox p{font:14px/1.55 system-ui,sans-serif;text-align:center;color:#ccd9cc;margin:8px 0 18px}
+.modaleyebrow{text-align:center;font:900 10px system-ui,sans-serif;letter-spacing:.21em;color:#a4d6c8}
+.choices{display:grid;gap:9px}
+.choice{display:flex;align-items:center;text-align:left;gap:12px;width:100%;background:#2a4646;border:2px solid #739487;border-radius:9px;padding:12px;color:#f3efdc}
+.choice:active{transform:scale(.98)}
+.choice .icon{font-size:30px;flex:none}
+.choice strong{font-size:16px}
+.choice small{font:12px/1.4 system-ui,sans-serif;color:#c9d8d1;display:block;margin-top:3px}
+.action{width:100%;margin-top:13px;border:2px solid #f3dfac;border-radius:8px;background:#dfc38c;color:#24332e;padding:12px;font:900 13px system-ui,sans-serif}
+.secondary{background:#30474d;color:#e5eadd;border-color:#7f9b96}
+.inventory{max-height:46dvh;overflow-y:auto;background:#10232a;border:1px solid #4e6c66;border-radius:8px;padding:9px;color:#d8dfd2;font:12px/1.7 system-ui,sans-serif;text-align:left}
+#toast{position:absolute;z-index:25;top:30%;left:50%;transform:translateX(-50%);border-radius:8px;background:#152529ed;border:1px solid #e4d29f;color:#f0e4bd;padding:8px 15px;font:800 13px system-ui,sans-serif;pointer-events:none;opacity:0;transition:opacity .18s;white-space:nowrap}
+#toast.show{opacity:1}
+@media(max-height:690px){#top{padding-top:calc(4px + env(safe-area-inset-top))}.hero{padding:0}.lootline{padding-top:5px}#hand{height:150px}.card .glyph{font-size:26px;margin-top:4px}.card .title{margin-top:5px}.card .desc{font-size:10px}.arena-head{padding-top:4px}#fighters{padding-bottom:4px}.intent{top:-2px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
+
+/* V2: retro dungeon presentation and crisp telegraphed motion */
+:root{--ink:#f7ead1;--gold:#f5d28b;--panel:#1c2930}
+#game{border-color:#9d8666;background:#101a22}
+#top{background:linear-gradient(175deg,#354148,#192833);border-bottom:2px solid #bfab82;box-shadow:0 5px 13px #0007}
+.brand{color:#fbe4ac;text-shadow:0 2px #4c3442,0 0 15px #9f806540}
+.subtitle{color:#e3c797}
+#runline{display:flex;justify-content:space-between;gap:5px;padding-top:9px;font:700 9px system-ui,sans-serif}
+.stat-pill{padding:5px 6px;border:1px solid #9a8669;border-radius:5px;background:#162a32;white-space:nowrap;color:#e6dac1}
+.stat-pill strong{color:#fff0b5}
+.relic{border-color:#c5af82;background:#30413b}
+#arena{background:radial-gradient(ellipse at center,#48594f,#1a2a34 75%);isolation:isolate}
+#arena:before,#arena:after{display:none}
+#backdrop{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;image-rendering:pixelated;pointer-events:none;opacity:.94;z-index:0}
+.arena-head{z-index:2;padding:7px 12px;background:#111c25be;border-bottom:1px solid #b4a17d80}
+#npc-line{position:relative;z-index:3;margin:8px 10px 0;padding:7px 9px;background:#111923dc;border-left:3px solid #efc67d;color:#f2deb9;border-radius:3px 7px 7px 3px;font:italic 11px/1.35 Georgia,serif;max-height:44px;overflow:hidden}
+#fighters{z-index:2;padding:4px 9px 8px;align-items:end}
+.fighter{min-height:0;will-change:transform}
+.sprite-wrap{align-items:flex-end;justify-content:center;min-height:0}
+.sprite-wrap:before{width:59%;height:11px;bottom:8px}
+canvas.sprite{width:min(95%,112px);max-height:min(100%,155px);filter:drop-shadow(4px 6px 0 #08121d66)!important;animation:char-idle 2.5s ease-in-out infinite;transform-origin:50% 85%}
+#enemy-sprite{animation-duration:3.2s;animation-delay:-.8s}
+.name{font-size:clamp(12px,3.4vw,15px);margin-bottom:5px}
+.healthbar{border-color:#e1d1af;height:12px}
+.intent{position:relative;top:auto;left:auto;transform:none;display:block;max-width:100%;font-size:clamp(10px,2.7vw,13px);white-space:normal;text-align:center;border:2px solid #d4ab7a;background:#1d2531f2;line-height:1.2;min-height:33px}
+.intent.attack{border-color:#ef9b8d;color:#ffe6d5;box-shadow:0 0 14px #ed544b55}
+.intent.skill{border-color:#91cfd3;color:#dcf5f3;box-shadow:0 0 14px #65a8bd35}
+.intent.cast{border-color:#c4a6e9;color:#ece1ff;box-shadow:0 0 14px #a75ce655}
+.intent-detail{padding:4px 2px;background:#12212bc9;border-radius:0 0 6px 6px;border:1px solid #657e77;border-top:0;color:#eee4ca;text-align:center;font:800 9px system-ui,sans-serif;letter-spacing:.1em;min-height:22px}
+#battlefx{position:absolute;z-index:7;inset:0;overflow:hidden;pointer-events:none}
+.fx-slash,.fx-arrow,.fx-magic,.fx-puff,.fx-spark{position:absolute;top:52%;left:56%;pointer-events:none}
+.fx-slash{width:82px;height:6px;background:#ffefd0;transform:rotate(-35deg);box-shadow:0 0 8px 3px #fbad6d,0 0 23px #ef5a57;animation:fx-swipe .42s steps(5,end) forwards}
+.fx-slash.enemy{left:27%;transform:rotate(35deg);background:#ffd5b3}
+.fx-slash.double{box-shadow:0 -13px #ffe9bf,0 13px #f5a17d,0 0 20px #fff5cd}
+.fx-arrow{width:39px;height:5px;left:71%;background:#e7daa9;box-shadow:-10px 0 #d1a266;animation:fx-projectile-left .5s steps(7,end) forwards}
+.fx-arrow.player{left:27%;animation-name:fx-projectile-right}
+.fx-magic{width:27px;height:27px;border-radius:50%;left:71%;background:#ab98ff;box-shadow:0 0 20px 8px #9a74f8;animation:fx-projectile-left .6s ease-out forwards}
+.fx-magic.player{left:28%;animation-name:fx-projectile-right}
+.fx-puff{font-size:42px;left:57%;top:47%;animation:fx-pop .55s steps(6,end) forwards}
+.fx-puff.player{left:23%}
+.fx-spark{width:6px;height:6px;background:#ffe7a8;box-shadow:14px 11px #fcca7b,-18px -7px #fff9bf,24px -19px #dbe9be;animation:fx-pop .5s steps(6,end) forwards}
+#battlelog{border-color:#bca37c;background:#17262ac9;color:#f4dfba}
+#hand-section{background:linear-gradient(#28383d,#111d26);border-color:#baa77d}
+.card{border-color:#ebd9b4;border-radius:9px;box-shadow:0 5px 0 #0b1520}
+.card.attack{background:linear-gradient(145deg,#76534d,#382b34)}
+.card.skill{background:linear-gradient(145deg,#406267,#26343e)}
+.card.power{background:linear-gradient(145deg,#75643e,#39363c)}
+.card .title{color:#fff0ce}
+.card:active{transform:translateY(-7px) scale(1.04)}
+#ringbutton,#potion{border:1px solid #c9aa7a;border-radius:7px;background:#243b40;color:#ffdeac;padding:8px 7px;font:900 12px system-ui,sans-serif;min-height:36px}
+#ringbutton:disabled,#potion:disabled{opacity:.4}
+#potion{color:#ecb4b5;border-color:#ab8788;white-space:nowrap}
+#endturn{border-color:#f2deaf;background:linear-gradient(#f8dda5,#d9b879);box-shadow:0 3px #8a7552}
+.modalbox{border-color:#dbc18d;background:linear-gradient(150deg,#344548,#111c2a)}
+.choice{background:linear-gradient(120deg,#2d4a4a,#1f3038);border-color:#a6a584;min-height:62px}
+.choice:disabled{opacity:.4;filter:grayscale(1)}
+@keyframes char-idle{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.fighter.lunge{animation:player-lunge .46s steps(6,end)}
+#enemy-side.lunge{animation:enemy-lunge .47s steps(6,end)}
+.fighter.hit{animation:fx-hit .32s steps(5,end);filter:brightness(2.2)}
+.fighter.blocking{animation:fx-block .42s steps(5,end)}
+.fighter.dead{animation:fx-fall .6s steps(6,end) forwards}
+#game.shaking #arena{animation:fx-shake .34s steps(6,end)}
+@keyframes player-lunge{0%,100%{transform:translateX(0)}37%{transform:translate(45px,-6px)}75%{transform:translateX(16px)}}
+@keyframes enemy-lunge{0%,100%{transform:translateX(0)}37%{transform:translate(-43px,-6px)}75%{transform:translateX(-16px)}}
+@keyframes fx-hit{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(8px)}}
+@keyframes fx-block{0%,100%{filter:brightness(1)}30%,70%{filter:brightness(1.8) drop-shadow(0 0 12px #86d9ed)}}
+@keyframes fx-fall{0%{opacity:1}100%{transform:translateY(26px) rotate(18deg);opacity:0}}
+@keyframes fx-shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(4px)}40%,80%{transform:translateX(-4px)}}
+@keyframes fx-swipe{0%{opacity:0;scale:.3}30%{opacity:1;scale:1.1}100%{opacity:0;scale:1.5;transform:translateY(-13px) rotate(-25deg)}}
+@keyframes fx-projectile-left{0%{opacity:0;transform:translate(0,0)}20%{opacity:1}100%{opacity:0;transform:translate(-190px,26px)}}
+@keyframes fx-projectile-right{0%{opacity:0;transform:translate(0,0)}20%{opacity:1}100%{opacity:0;transform:translate(190px,-8px)}}
+@keyframes fx-pop{0%{opacity:0;transform:scale(.3)}30%{opacity:1;transform:scale(1.25)}100%{opacity:0;transform:scale(1.7)}}
+@media(max-height:680px){canvas.sprite{width:90px}#npc-line{padding:4px 7px;font-size:10px;margin-top:3px}#runline{padding-top:4px}.intent{min-height:26px}#hand{height:145px}}
+@media(prefers-reduced-motion:reduce){.sprite{animation:none!important}}
+
+/* Small-screen HUD: keep all combat controls visible on an iPhone. */
+#runline{flex-wrap:wrap;row-gap:4px}
+.handhead{display:grid;grid-template-columns:minmax(77px,1fr) 35px 48px auto;align-items:center;column-gap:6px;padding:0 10px 8px}
+.energy{font-size:11px;letter-spacing:-.025em}
+.energy strong{font-size:20px}
+.deckinfo{display:none}
+#ringbutton{padding:7px 3px;min-width:35px}
+#potion{padding:7px 3px;min-width:48px}
+#endturn{padding:8px 8px;font-size:11px;min-width:85px}
+#foot{font-size:10px;white-space:nowrap}
+.intent.attack{animation:intent-glow 2.2s ease-in-out infinite}
+.intent.cast{animation:spell-glow 2.6s ease-in-out infinite}
+@keyframes intent-glow{0%,100%{box-shadow:0 0 2px #cb5b4b66}50%{box-shadow:0 0 13px #f966657e}}
+@keyframes spell-glow{0%,100%{box-shadow:0 0 2px #9875ad66}50%{box-shadow:0 0 13px #aa7dff8c}}
+#modal.show.combat-result{animation:portal-enter .5s both .23s}
+@keyframes portal-enter{0%{opacity:0}100%{opacity:1}}
+@media(max-width:355px){.handhead{grid-template-columns:minmax(65px,1fr) 32px 43px auto;gap:4px;padding:0 7px 7px}.energy{font-size:10px}.energy strong{font-size:17px}#ringbutton{min-width:32px}#potion{min-width:43px}#endturn{min-width:79px;font-size:10px;padding:8px 5px}.stat-pill{font-size:8px}}
+
+/* Player feedback: a card arcs into combat; relics flare; defeated foes fall. */
+.card-ghost{position:absolute;z-index:19;left:50%;bottom:clamp(175px,27dvh,247px);font-size:39px;pointer-events:none;text-shadow:0 0 11px #f2ce89,0 0 25px #f7af96;animation:card-launch .68s cubic-bezier(.25,.75,.3,1) forwards}
+@keyframes card-launch{0%{opacity:1;transform:translate(-50%,0) rotate(-18deg) scale(.8)}50%{opacity:1;transform:translate(-50%,-62px) rotate(-4deg) scale(1.2)}100%{opacity:0;transform:translate(10px,-160px) rotate(21deg) scale(.4)}}
+.relic.triggered{animation:relic-trigger .58s ease-out}
+@keyframes relic-trigger{0%,100%{box-shadow:inset 0 -2px #121a20;transform:scale(1)}40%{box-shadow:0 0 12px 4px #f9db7b,0 0 28px #edd49b;transform:scale(1.24)}}
+#enemy-side.dead canvas.sprite{animation:fx-fall .6s steps(6,end) forwards!important}
+#player-side.dead canvas.sprite{animation:fx-fall .6s steps(6,end) forwards!important}
+</style>
+</head>
+<body>
+<div id="game">
+  <header id="top">
+    <div class="topline"><div><div class="brand">⚔ THIEFSPIRE <span style="color:#e8bfc2">II</span></div><div class="subtitle">THE RING REMEMBERS · THE GOLDEN VAULT</div></div><div style="text-align:right"><div class="floor" id="floor">FLOOR 01 / 12</div><div class="coins" id="gold">🪙 25 GOLD</div></div></div>
+    <div id="runline"><span class="stat-pill">🗝️ MASTER LOOT <strong id="fragments">0/5</strong></span><span class="stat-pill">🎲 <strong id="stats">CUN 2 · GRT 1 · LOR 1</strong></span><span class="stat-pill">💍 <strong>CURSED</strong></span></div>
+    <div class="lootline"><div class="loottitle">Relics / Loot</div><div id="relics"><span class="empty-relic">Nothing stolen yet</span></div><button class="mini" id="bag" aria-label="Open inventory">BAG ☰</button><button class="mini" id="sound" aria-label="Toggle sound">♪</button></div>
+  </header>
+  <main id="arena"><canvas id="backdrop" width="320" height="220" aria-hidden="true"></canvas><div id="battlefx" aria-hidden="true"></div>
+    <div class="arena-head"><span id="room">THE LOWER KEEP</span><span id="encounter-name">ENCOUNTER 01</span></div>
+    <div id="npc-line" aria-live="polite">“The ring remembers every hand that wore it.”</div>
+    <div id="fighters">
+      <div class="fighter" id="player-side">
+        <div class="sprite-wrap"><canvas id="thief-sprite" class="sprite" width="64" height="64" aria-label="Pixel-art hooded thief"></canvas></div>
+        <div class="name">THE THIEF</div>
+        <div class="healthbar"><span id="player-fill"></span></div>
+        <div class="statline"><span id="player-hp">68 / 68 HP</span><span id="player-block">🛡 0</span></div>
+        <div class="statuses" id="player-status"></div>
+      </div>
+      <div class="fighter" id="enemy-side">
+        <div class="intent" id="intent">⚔ ATTACK 7</div><div class="intent-detail" id="intent-detail">SWORD · 1 HIT</div>
+        <div class="sprite-wrap"><canvas id="enemy-sprite" class="sprite" width="64" height="64" aria-label="Pixel-art enemy"></canvas></div>
+        <div class="name" id="enemy-name">GATE GUARD</div>
+        <div class="healthbar"><span id="enemy-fill"></span></div>
+        <div class="statline"><span id="enemy-hp">36 / 36 HP</span><span id="enemy-block">🛡 0</span></div>
+        <div class="statuses" id="enemy-status"></div>
+      </div>
+    </div>
+    <div id="battlelog" role="status" aria-live="polite">The tower waits for no one.</div>
+  </main>
+  <section id="hand-section" aria-label="Hand of cards">
+    <div class="handhead"><div class="energy">✦ ENERGY <strong id="energy">3</strong> / 3</div><span class="deckinfo" id="deckinfo">DRAW 6 · DISCARD 0</span><button id="ringbutton" title="Once per battle: unleash the cursed ring" aria-label="Use cursed ring">💍</button><button id="potion" title="Drink a potion to restore 13 HP" aria-label="Drink healing potion">🧪 2</button><button id="endturn">END TURN ↵</button></div>
+    <div id="hand"></div>
+    <div id="foot">TAP CARDS · ENEMY INTENT SHOWN ABOVE · SWIPE FOR MORE</div>
+  </section>
+  <div id="modal" role="dialog" aria-modal="true"><div class="modalbox" id="modalcontent"></div></div>
+  <div id="toast" role="status"></div>
+</div>
+<script>
+(function(){
+"use strict";
+var KEY="thiefspire_pocket_v1_2026";
+var Card={
+strike:{name:"Knife Slash",icon:"🗡️",cost:1,type:"attack",desc:"Deal 7 damage."},
+guard:{name:"Take Cover",icon:"🛡️",cost:1,type:"skill",desc:"Gain 6 Block."},
+quick:{name:"Quick Cut",icon:"⚡",cost:0,type:"attack",desc:"Deal 3. Apply 1 Bleed."},
+feint:{name:"Feint",icon:"🎭",cost:1,type:"skill",desc:"Gain 5 Block. Weaken enemy."},
+backstab:{name:"Backstab",icon:"🔪",cost:2,type:"attack",desc:"Deal 15. +5 vs Exposed."},
+smoke:{name:"Smoke Bomb",icon:"💨",cost:1,type:"skill",desc:"Gain 10 Block. Weaken enemy."},
+poison:{name:"Venom Vial",icon:"🧪",cost:1,type:"skill",desc:"Apply 5 Bleed."},
+double:{name:"Twin Daggers",icon:"⚔️",cost:1,type:"attack",desc:"Strike twice for 4."},
+trick:{name:"Dirty Trick",icon:"🪄",cost:1,type:"skill",desc:"Apply 2 Exposed. Draw 1."},
+cloak:{name:"Shadow Cloak",icon:"🌑",cost:1,type:"skill",desc:"Gain 13 Block."},
+siphon:{name:"Life Steal",icon:"💜",cost:2,type:"attack",desc:"Deal 10. Heal 4."},
+gambit:{name:"Gambit",icon:"🎲",cost:0,type:"skill",desc:"Lose 2 HP. Draw 2."},
+pierce:{name:"Piercing Blow",icon:"🏹",cost:2,type:"attack",desc:"Deal 17. Ignore Block."},
+sharpen:{name:"Sharpen",icon:"✨",cost:1,type:"power",desc:"Gain 1 Energy. Draw 2."},
+rally:{name:"Battle Rhythm",icon:"🥁",cost:1,type:"skill",desc:"Gain 5 Block. Draw 2."},
+hex:{name:"Cursed Blade",icon:"🔥",cost:2,type:"attack",desc:"Deal 8. Apply 5 Bleed."}
+};
+var Relic={
+fang:{icon:"🦷",name:"Venom Fang",desc:"Every attack applies +1 Bleed."},
+ring:{icon:"💍",name:"Iron Ring",desc:"+10 Max HP and heal 10 immediately."},
+lantern:{icon:"🏮",name:"Hollow Lantern",desc:"+1 Energy on the first turn of each fight."},
+rune:{icon:"🔥",name:"Cinder Rune",desc:"All attacks deal +2 damage."},
+watch:{icon:"⌛",name:"Pocket Watch",desc:"Draw 1 extra card at the start of each fight."},
+clasp:{icon:"🧷",name:"Cloak Clasp",desc:"Start every turn with 3 Block."},
+heart:{icon:"🫀",name:"Obsidian Heart",desc:"Heal 5 HP after every victory."}
+};
+var Enemies=[
+{id:"guard",name:"GATE GUARD",hp:28,moves:[["attack",7],["defend",7],["attack",9]]},
+{id:"goblin",name:"DAGGER GOBLIN",hp:25,moves:[["attack",6],["attack",8],["buff",3]]},
+{id:"slime",name:"MOSS SLIME",hp:30,moves:[["defend",6],["attack",8],["attack",8]]},
+{id:"cultist",name:"ASH CULTIST",hp:32,moves:[["buff",3],["attack",10],["attack",8]]},
+{id:"rat",name:"TOWER RAT",hp:27,moves:[["attack",7],["bleed",6],["attack",8]]},
+{id:"knight",name:"IRON KNIGHT",hp:43,moves:[["defend",12],["attack",12],["attack",9]]},
+{id:"wraith",name:"DUSK WRAITH",hp:35,moves:[["bleed",7],["attack",10],["defend",9]]},
+{id:"imp",name:"EMBER IMP",hp:33,moves:[["attack",8],["buff",4],["attack",11]]},
+{id:"ogre",name:"DUNGEON OGRE",hp:55,moves:[["attack",14],["defend",9],["attack",12]]},
+{id:"warden",name:"GOLDEN WARDEN",hp:112,moves:[["attack",13],["defend",14],["bleed",11],["buff",4],["attack",17]]}
+];
+
+/* Recovered earlier runs: the Thief's Ring, five Master Loot fragments,
+   three rogue backgrounds, dice choices, Shadow Captain and Vault King. */
+Object.assign(Card,{
+pickpocket:{name:"Pickpocket",icon:"🪙",cost:0,type:"attack",desc:"Deal 4. Steal 3 gold once per foe."},
+evade:{name:"Evasion Roll",icon:"🌀",cost:1,type:"skill",desc:"Gain 8 Block. Draw 1."},
+flash:{name:"Flash Powder",icon:"✨",cost:1,type:"skill",desc:"Weak 2, Exposed 1."},
+ambush:{name:"Ambush",icon:"🥷",cost:2,type:"attack",desc:"Deal 11. +9 on turn one."},
+sap:{name:"Sap",icon:"🔨",cost:1,type:"attack",desc:"Deal 6. Apply Weak 1."},
+hook:{name:"Grapple Hook",icon:"🪝",cost:1,type:"attack",desc:"Deal 9. Ignore Block."},
+adrenaline:{name:"Adrenaline",icon:"💉",cost:0,type:"skill",desc:"Gain 1 Energy. Draw 1."},
+shade:{name:"Cloak & Dagger",icon:"🦇",cost:1,type:"attack",desc:"Deal 5. Gain 5 Block."}
+});
+Object.assign(Relic,{
+dice:{icon:"🎲",name:"Loaded Dice",desc:"+2 Cunning on story checks."},
+lockpick:{icon:"🗝️",name:"Silver Lockpick",desc:"+2 Cunning on story checks."},
+mask:{icon:"🎭",name:"Faceless Mask",desc:"The first enemy hit each fight deals 3 less damage."},
+chapel:{icon:"⛪",name:"Chapel Coin",desc:"+2 Lore on story checks."},
+candle:{icon:"🕯️",name:"Black Candle",desc:"Enemies start battles with 2 Bleed."},
+spider:{icon:"🕷️",name:"Spider Brooch",desc:"+2 Grit on story checks."},
+blade:{icon:"⚔️",name:"Runic Dagger",desc:"Your first attack each battle deals +3 damage."}
+});
+Enemies.push(
+{id:"archer",name:"TOWER ARCHER",hp:30,moves:[["shoot",7],["shoot",9],["defend",5]]},
+{id:"jailer",name:"IRON JAILER",hp:46,moves:[["attack",9],["bleed",6],["defend",9]]},
+{id:"mimic",name:"HUNGRY MIMIC",hp:42,moves:[["defend",8],["multi",5],["attack",12]]},
+{id:"skeleton",name:"BONE DUELIST",hp:37,moves:[["multi",5],["defend",7],["attack",11]]},
+{id:"monk",name:"PLAGUE MONK",hp:40,moves:[["spell",8],["bleed",7],["buff",3]]},
+{id:"mage",name:"CANDLE MAGE",hp:42,moves:[["spell",11],["defend",6],["spell",13]]},
+{id:"captain",name:"SHADOW CAPTAIN",hp:83,moves:[["attack",13],["defend",13],["multi",7],["spell",11],["buff",4]]}
+);
+var Dialogues={
+guard:["“State your business, shadow.”","“Draw steel. The king pays for corpses.”"],
+knight:["“My oath outlives your tricks.”","“No thief shall pass the iron gate.”"],
+warden:["“Five fragments. One foolish thief.”","“Every thief believes they are the first.”"],
+captain:["“I taught your shadow how to fight.”","“The bell tolls for thieves.”"],
+archer:["“You won't reach the stairs.”","“Stop moving. I hate missing.”"],
+jailer:["“Keys stay on my belt.”","“Prisoners leave in chains.”"],
+mimic:["The treasure chest opens its teeth.","“You thought I was furniture.”"],
+skeleton:["Bones rattle in a duelist's salute.","“En garde,” whispers an empty skull."],
+monk:["“Every wound is an offering.”","“May the rot have mercy.”"],
+mage:["“My candles remember your face.”","“The flame knows your name.”"],
+goblin:["“Your pockets are mine!”","“I saw you first, tall one.”"],
+slime:["The slime bubbles in an almost friendly way."],
+cultist:["“The ash remembers.”"],
+rat:["The rat bares teeth the size of tiny knives."],
+wraith:["“Leave your breath at the door.”"],
+imp:["“Hot enough for you?”"],
+ogre:["“SMASH THE LITTLE ONE!”"]
+};
+var Events={
+dice:{icon:"🎲",name:"THE DICE GOBLIN",text:"A goblin in a velvet vest offers a game of bone dice. “The house wins, unless you're better at cheating.”",opts:[["Roll fairly · Cunning DC 12","cun",12],["Read the loaded bones · Lore DC 11","lor",11],["Walk away","leave",0]]},
+reliquary:{icon:"🗝️",name:"THE LOCKED RELIQUARY",text:"An iron chest sleeps beneath an inscription: EVERYTHING HAS A PRICE. The lock is older than the castle.",opts:[["Pick the lock · Cunning DC 12","cun",12],["Break the hinges · Grit DC 13","grt",13],["Use the Thief's Ring","ring",0]]},
+prisoner:{icon:"🧍",name:"THE SUSPICIOUS PRISONER",text:"A prisoner whispers from a barred cell. “The Warden hoards five fragments. Get me out and I'll tell you where one went.”",opts:[["Free the prisoner · Lore DC 12","lor",12],["Question them · Cunning DC 11","cun",11],["Walk away","leave",0]]},
+chapel:{icon:"⛪",name:"CHAPEL OF ASH",text:"Black candles gutter around an empty altar. A voice offers a blessing in exchange for a scar.",opts:[["Pray for a blessing · Lore DC 12","lor",12],["Sacrifice 7 HP for a relic","sacrifice",0],["Decline the bargain","leave",0]]},
+tome:{icon:"📖",name:"THE WHISPERING TOME",text:"A book binds itself to your shadow. Every page is blank until you blink.",opts:[["Study the spell · Lore DC 12","lor",12],["Tear out a useful page · Grit DC 12","grt",12],["Sell the book to a collector","sell",0]]},
+bell:{icon:"🔔",name:"THE BELLFLOOR HEIST",text:"Above the bell tower, the castle guards are changing shifts. One hallway is lit, one is dark, and one smells of smoke.",opts:[["Slip through shadow · Cunning DC 13","cun",13],["Talk your way past · Lore DC 12","lor",12],["Charge through · Grit DC 12","grt",12]]},
+mirror:{icon:"🪞",name:"THE MIRROR KNIGHT",text:"A polished suit of armor reflects not your face, but a dozen thieves who came before. “Choose what you are willing to lose.”",opts:[["Offer a memory · Lore DC 13","lor",13],["Steal its silver eye · Cunning DC 13","cun",13],["Shatter the mirror · Grit DC 13","grt",13]]}
+};
+var RoomMenu={
+2:["battle","event","treasure"],3:["battle","merchant","event"],4:["camp","elite","event"],
+5:["battle","treasure","elite"],6:["battle","merchant","event"],7:["elite","event","battle"],
+8:["camp","merchant","treasure"],9:["battle","elite","event"],10:["battle","merchant","treasure"],
+11:["elite","event","camp"],12:["boss"]
+};
+var RoomInfo={
+battle:["⚔️","Guarded Passage","Fight a patrol for loot and a new card."],
+elite:["💀","Elite Challenge","A dangerous champion, richer spoils."],
+event:["🎲","Strange Encounter","A D&D-style story choice with a d20 check."],
+treasure:["🎁","Locked Treasury","One chest, one decision, no second takes."],
+merchant:["🛍️","Black Market","Buy a card, relic, or healing potion."],
+camp:["🔥","Safe Campfire","Heal, improve a card, or study lore."],
+boss:["👑","The Golden Warden","The final vault is guarded by the king's monster."]
+};
+
+var s,modalState="",soundOn=false,audioCtx,toastTimer,animNonce=0;
+function id(x){return document.getElementById(x)}
+function rand(n){return Math.floor(Math.random()*n)}
+function shuffle(a){for(var i=a.length-1;i>0;i--){var j=rand(i+1),v=a[i];a[i]=a[j];a[j]=v}return a}
+function initial(){return {version:2,balancePatch:1,floor:1,hp:76,maxHp:76,block:0,weak:0,bleed:0,energy:3,gold:25,relics:[],deck:["strike","strike","strike","strike","strike","guard","guard","guard","guard","quick","feint"],draw:[],discard:[],hand:[],turn:1,enemy:null,mode:"origin",log:"The Ring remembers. Choose how to steal the Vault.",rewardChoices:[],lootText:"",wins:0,origin:"",stats:{cun:2,grt:1,lor:1},fragments:0,fragmentFloors:[],roomChoices:[],roomId:"",nextKind:"battle",elite:false,potions:3,ringUsed:false,ringRoomUsed:false,stolenThisFight:false,firstAttack:false,maskReady:false,shopStock:null,roomResolved:false,history:[],dialogue:"A cold ring tightens around your finger."}}
+
+function save(){try{localStorage.setItem(KEY,JSON.stringify(s))}catch(e){}}
+function has(id){return s.relics.indexOf(id)>=0}
+function cardKey(key){return key.replace("+","")}
+function up(key){return key.indexOf("+")>=0}
+function power(key,v){return v+(up(key)?3:0)}
+function hpAdd(n){s.hp=Math.min(s.maxHp,s.hp+Math.max(0,n))}
+function drawCards(n){for(var i=0;i<n;i++){if(!s.draw.length){if(!s.discard.length)break;s.draw=shuffle(s.discard.splice(0))}s.hand.push(s.draw.pop())}}
+
+function pickEnemy(){
+ if(s.floor===12)return Enemies.filter(function(x){return x.id==="warden"})[0];
+ if(s.elite&&s.floor===7)return Enemies.filter(function(x){return x.id==="captain"})[0];
+ var pool;
+ if(s.elite)pool=Enemies.filter(function(x){return ["knight","ogre","jailer","mimic","captain"].indexOf(x.id)>=0});
+ else if(s.floor<4)pool=Enemies.filter(function(x){return ["guard","goblin","slime","cultist","rat","archer"].indexOf(x.id)>=0});
+ else if(s.floor<8)pool=Enemies.filter(function(x){return ["guard","archer","knight","jailer","skeleton","mimic","rat","cultist"].indexOf(x.id)>=0});
+ else pool=Enemies.filter(function(x){return ["knight","wraith","imp","ogre","jailer","mimic","monk","mage","skeleton","archer"].indexOf(x.id)>=0});
+ return pool[rand(pool.length)]
+}
+function balancedEnemyHp(proto,floor,elite){return Math.max(16,Math.round(proto.hp*.92))+Math.max(0,floor-1)+(elite?12:0)}
+function startFloor(){
+ modalState="";id("enemy-side").classList.remove("dead");id("player-side").classList.remove("dead");
+ var kind=s.floor===12?"boss":(s.nextKind||"battle");
+ s.roomId=kind;s.nextKind=null;s.roomResolved=false;s.enemy=null;s.elite=kind==="elite";
+ s.ringUsed=false;s.ringRoomUsed=false;s.stolenThisFight=false;s.firstAttack=false;s.maskReady=has("mask");
+ if(kind==="camp"){s.mode="camp";s.dialogue="“Even thieves need a fire,” says a traveler who refuses to tell you their name.";s.log="A quiet rest chamber.";render();save();return}
+ if(kind==="merchant"){s.mode="merchant";var items=Object.keys(Card).filter(function(k){return k!=="strike"&&k!=="guard"}),rr=Object.keys(Relic).filter(function(k){return !has(k)});
+ s.shopStock={card:items[rand(items.length)],relic:rr.length?rr[rand(rr.length)]:null,cardBought:false,relicBought:false,potionBought:false};
+ s.dialogue="“Everything here is stolen. That means everything is authentic.”";s.log="A black-market vendor smiles too widely.";render();save();return}
+ if(kind==="treasure"){s.mode="treasure";s.dialogue="The iron chest has three locks, a fresh scratch, and no patience.";s.log="A locked coffer waits. One attempt only.";render();save();return}
+ if(kind==="event"){s.mode="event";var keys=Object.keys(Events);s.eventId=keys[rand(keys.length)];s.dialogue=Events[s.eventId].text;s.log=Events[s.eventId].name;render();save();return}
+ var proto=pickEnemy(),maxEnemyHp=balancedEnemyHp(proto,s.floor,s.elite);
+ s.enemy={id:proto.id,name:proto.name,hp:maxEnemyHp,maxHp:maxEnemyHp,block:0,bleed:has("candle")?2:0,weak:0,exposed:0,midx:0,buff:0};
+ s.mode="battle";s.block=has("clasp")?3:0;s.weak=0;s.bleed=0;s.turn=1;s.energy=3+(has("lantern")?1:0);
+ s.draw=shuffle(s.deck.slice());s.discard=[];s.hand=[];drawCards(5+(has("watch")?1:0));
+ var lines=Dialogues[proto.id]||["Steel answers steel."];s.dialogue=proto.id==="warden"?"The Golden Warden, called the Vault King in older tales, lifts a blade. “Every thief believes they are the first.”":lines[rand(lines.length)];
+ s.log=(s.elite?"An elite champion guards the stair: ":"A hostile figure appears: ")+proto.name+".";
+ render();save()
+}
+function getMove(){var e=s.enemy;if(!e)return ["attack",0];var proto=Enemies.filter(function(x){return x.id===e.id})[0];return proto.moves[e.midx%proto.moves.length]}
+function moveAmount(){var m=getMove(),kind=m[0],buff=s.enemy?s.enemy.buff:0;if(kind==="buff")return Math.max(0,Math.min(m[1],5-buff));if(kind==="defend")return m[1]+Math.floor(s.floor/6);return m[1]+Math.min(5,buff)+Math.floor(s.floor/6)}
+function intentInfo(){
+ if(!s.enemy||s.mode!=="battle")return {name:"✦ ROOM CLEARED",detail:"THE TOWER WAITS",cls:"skill"};
+ var m=getMove(),v=moveAmount(),weak=s.enemy.weak>0;var dmg=weak?Math.ceil(v*.75):v;
+ if(m[0]==="attack")return {name:"⚔ SWORD SWING · "+dmg,detail:"MELEE · 1 HIT"+(weak?" · WEAKENED":""),cls:"attack"};
+ if(m[0]==="bleed")return {name:"🗡 BLEEDING STAB · "+dmg,detail:"MELEE · 1 HIT + BLEED 2",cls:"attack"};
+ if(m[0]==="shoot")return {name:"🏹 ARROW SHOT · "+dmg,detail:"RANGED · 1 PROJECTILE",cls:"attack"};
+ if(m[0]==="spell")return {name:"🔮 SPELL BLAST · "+dmg,detail:"MAGIC · 1 PROJECTILE",cls:"cast"};
+ if(m[0]==="multi")return {name:"⚔ DOUBLE STRIKE · "+(dmg*2),detail:"MELEE · 2 HITS OF "+dmg,cls:"attack"};
+ if(m[0]==="defend")return {name:"🛡 RAISE SHIELD · "+v,detail:"DEFENSE · NO DAMAGE",cls:"skill"};
+ return {name:"⬆ EMPOWER · +"+v,detail:"BUFF · NO DAMAGE",cls:"cast"}
+}
+function moveLabel(){return intentInfo().name}
+
+function sound(freq){if(!soundOn)return;try{var C=window.AudioContext||window.webkitAudioContext;audioCtx=audioCtx||new C();if(audioCtx.state==="suspended")audioCtx.resume();var o=audioCtx.createOscillator(),g=audioCtx.createGain(),t=audioCtx.currentTime;o.type="triangle";o.frequency.setValueAtTime(freq,t);o.frequency.exponentialRampToValueAtTime(Math.max(50,freq*.6),t+.1);g.gain.setValueAtTime(.11,t);g.gain.exponentialRampToValueAtTime(.0001,t+.14);o.connect(g);g.connect(audioCtx.destination);o.start(t);o.stop(t+.15)}catch(e){}}
+function floatOn(side,text,cls){var wrap=id(side==="enemy"?"enemy-side":"player-side"),el=document.createElement("b");el.className="float "+(cls||"");el.textContent=text;wrap.appendChild(el);setTimeout(function(){el.remove()},780)}
+function toast(txt){var el=id("toast");el.textContent=txt;el.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(function(){el.classList.remove("show")},950)}
+function hurtEnemy(n,ignoreBlock){var e=s.enemy,firstHit=!s.firstAttack,d=Math.max(0,n+(has("rune")?2:0)+(has("blade")&&!s.firstAttack?3:0));s.firstAttack=true;if(firstHit&&has("blade"))relicPulse("blade");if(has("rune"))relicPulse("rune");if(s.weak>0)d=Math.ceil(d*.75);if(e.exposed>0)d=Math.ceil(d*1.5);var b=ignoreBlock?0:Math.min(e.block,d);e.block-=b;var final=Math.max(0,d-b);e.hp=Math.max(0,e.hp-final);floatOn("enemy","-"+final,"red");if(has("fang")){e.bleed++;relicPulse("fang")}return final}
+function gainBlock(n){s.block+=n;floatOn("player","🛡 +"+n,"green")}
+function damagePlayer(n,fromEnemy){var d=Math.max(0,n);if(fromEnemy&&s.maskReady&&d>0){d=Math.max(0,d-3);s.maskReady=false;relicPulse("mask")}var blocked=Math.min(s.block,d);s.block-=blocked;d-=blocked;s.hp=Math.max(0,s.hp-d);floatOn("player","-"+d,"red");if(s.hp<=0){s.mode="lost";s.log="The tower claims another thief.";id("player-side").classList.add("dead")}return d}
+
+function attackPlayer(n){return damagePlayer(n,true)}
+function useRing(){
+ if(s.mode!=="battle"||s.ringUsed)return;
+ s.ringUsed=true;var roll=rand(5),e=s.enemy,msg="";
+ if(roll===0){var g=5+rand(5);s.gold+=g;msg="The ring steals "+g+" gold from nowhere.";attackFx("player","magic")}
+ else if(roll===1){e.exposed+=2;msg="The ring reveals a weakness. Enemy Exposed +2.";attackFx("player","magic")}
+ else if(roll===2){e.bleed+=4;msg="The ring cuts a phantom wound. Bleed +4.";attackFx("player","stab")}
+ else if(roll===3){gainBlock(9);msg="The ring becomes a spectral shield.";attackFx("player","block")}
+ else{damagePlayer(2);drawCards(2);msg="The ring takes 2 HP and reveals two cards.";attackFx("player","magic")}
+ s.log="💍 "+msg;sound(560);render();save()
+}
+function drinkPotion(){
+ if(s.potions<1||s.hp>=s.maxHp||s.mode==="lost"||s.mode==="won")return;
+ s.potions--;hpAdd(16);s.log="You drink a healing potion and regain up to 16 HP.";
+ attackFx("player","heal");sound(620);render();save()
+}
+function playCard(index){
+ if(s.mode!=="battle"||modalState)return;
+ var key=s.hand[index];if(!key)return;var c=Card[cardKey(key)];if(!c)return;
+ if(s.energy<c.cost){toast("NOT ENOUGH ENERGY");sound(130);return}
+ s.energy-=c.cost;s.hand.splice(index,1);s.discard.push(key);cardLaunch(c);
+ var e=s.enemy,note=c.name,fx="magic",type=cardKey(key);
+ if(c.type==="attack")fx="slash";
+ if(type==="double"||type==="quick")fx="double";
+ if(type==="backstab"||type==="ambush")fx="stab";
+ if(type==="pierce"||type==="hook")fx="arrow";
+ if(type==="poison"||type==="hex"||type==="flash")fx="magic";
+ if(type==="guard"||type==="cloak"||type==="evade"||type==="smoke"||type==="rally")fx="block";
+ switch(type){
+ case "strike":hurtEnemy(power(key,7));break;
+ case "guard":gainBlock(power(key,6));break;
+ case "quick":hurtEnemy(power(key,3));e.bleed+=up(key)?2:1;break;
+ case "feint":gainBlock(power(key,5));e.weak+=up(key)?2:1;break;
+ case "backstab":hurtEnemy(power(key,15)+(e.exposed>0?5:0));break;
+ case "smoke":gainBlock(power(key,10));e.weak+=1;break;
+ case "poison":e.bleed+=power(key,5);floatOn("enemy","🩸 +"+power(key,5),"red");break;
+ case "double":hurtEnemy(power(key,4));if(e.hp>0)hurtEnemy(power(key,4));break;
+ case "trick":e.exposed+=up(key)?3:2;drawCards(1);break;
+ case "cloak":gainBlock(power(key,13));break;
+ case "siphon":hurtEnemy(power(key,10));hpAdd(up(key)?7:4);fx="magic";break;
+ case "gambit":damagePlayer(2);if(s.mode!=="lost")drawCards(up(key)?3:2);break;
+ case "pierce":hurtEnemy(power(key,17),true);break;
+ case "sharpen":s.energy+=up(key)?2:1;drawCards(2);break;
+ case "rally":gainBlock(power(key,5));drawCards(2);break;
+ case "hex":hurtEnemy(power(key,8));e.bleed+=up(key)?7:5;break;
+ case "pickpocket":hurtEnemy(power(key,4));if(!s.stolenThisFight){s.stolenThisFight=true;s.gold+=3;note+=" (+3 gold)"}break;
+ case "evade":gainBlock(power(key,8));drawCards(1);break;
+ case "flash":e.weak+=2;e.exposed+=1;break;
+ case "ambush":hurtEnemy(power(key,11)+(s.turn===1?9:0));break;
+ case "sap":hurtEnemy(power(key,6));e.weak+=1;break;
+ case "hook":hurtEnemy(power(key,9),true);break;
+ case "adrenaline":s.energy+=1;drawCards(1);break;
+ case "shade":hurtEnemy(power(key,5));gainBlock(5);break;
+ }
+ attackFx("player",fx);
+ s.log="You play "+note+".";sound(c.type==="attack"?330:540);
+ if(s.mode==="battle"&&s.enemy.hp<=0)winEncounter();
+ render();save()
+}
+function getRelic(r){
+ if(!r||has(r)||!Relic[r])return false;
+ s.relics.push(r);
+ if(r==="ring"){s.maxHp+=10;hpAdd(10)}
+ return true
+}
+function randomRelic(){
+ var available=Object.keys(Relic).filter(function(r){return !has(r)});
+ if(!available.length){s.gold+=25;return "🪙 +25 gold instead of a duplicate relic"}
+ var r=available[rand(available.length)];getRelic(r);
+ return Relic[r].icon+" "+Relic[r].name
+}
+function winEncounter(){
+ s.wins++;id("enemy-side").classList.add("dead");var gain=10+rand(10)+s.floor*2+(s.elite?25:0);
+ s.gold+=gain;hpAdd(3);if(has("heart")){hpAdd(5);relicPulse("heart")}
+ s.lootText="🪙 +"+gain+" gold · 💚 +3 HP"+(has("heart")?" · +5 HP (Obsidian Heart)":"");
+ if(s.floor===12){s.mode="won";s.gold+=100;s.log="The Golden Warden falls. The vault doors open.";s.dialogue="“You may keep the gold,” sighs the Thief's Ring. “I kept the stories.”";sound(780);return}
+ if(s.elite||[3,7,11].indexOf(s.floor)>=0){s.lootText+=" · "+randomRelic()}
+ var pool=Object.keys(Card).filter(function(k){return ["strike","guard"].indexOf(k)<0});
+ s.rewardChoices=shuffle(pool).slice(0,3);
+ s.mode="reward";s.log="The "+s.enemy.name.toLowerCase()+" falls. Loot the room.";
+ s.dialogue=s.elite?"The champion collapses among shattered banners. Their treasure is yours.":"Steel falls silent. The ring hums under your cloak.";
+ sound(740)
+}
+function endTurn(){
+ if(s.mode!=="battle"||modalState)return;
+ s.discard.push.apply(s.discard,s.hand.splice(0));var e=s.enemy;
+ if(e.bleed>0){var b=e.bleed;e.hp=Math.max(0,e.hp-b);e.bleed--;floatOn("enemy","🩸 -"+b,"red")}
+ if(e.hp<=0){attackFx("player","magic");winEncounter();render();save();return}
+ e.block=0;var m=getMove(),n=moveAmount(),msg="",kind=m[0],hurt=0;
+ if(["attack","bleed","shoot","spell","multi"].indexOf(kind)>=0){
+  if(e.weak>0)n=Math.ceil(n*.75);
+  attackFx("enemy",kind==="bleed"?"stab":kind==="shoot"?"arrow":kind==="spell"?"magic":kind==="multi"?"double":"slash");
+  if(kind==="multi"){hurt=damagePlayer(n,true);if(s.mode!=="lost")hurt+=damagePlayer(n,true)}
+  else hurt=damagePlayer(n,true);
+  msg=e.name+" uses "+({"attack":"Sword Swing","bleed":"Bleeding Stab","shoot":"Arrow Shot","spell":"Spell Blast","multi":"Double Strike"}[kind])+" · "+hurt+" damage"+(kind==="multi"?" over two hits":"")+".";
+  if(kind==="bleed"&&hurt>0){s.bleed+=2;msg+=" Bleed +2."}
+ }else if(kind==="defend"){attackFx("enemy","block");e.block+=n;msg=e.name+" RAISES SHIELD and gains "+n+" Block."}
+ else{attackFx("enemy","buff");e.buff=Math.min(5,e.buff+n);msg=e.name+" EMPOWERS and gains +"+n+" future damage!"}
+ e.midx++;if(e.weak>0)e.weak--;if(e.exposed>0)e.exposed--;
+ if(s.mode!=="lost"){
+  if(s.bleed>0){var dot=s.bleed;s.hp=Math.max(0,s.hp-dot);s.bleed--;msg+=" Bleed costs "+dot+" HP.";if(s.hp<=0)s.mode="lost"}
+  if(s.weak>0)s.weak--;
+  s.turn++;s.block=has("clasp")?3:0;s.energy=3;drawCards(5);s.log=msg;
+ }else s.log=msg;
+ sound(kind==="shoot"?420:kind==="spell"?640:180);render();save()
+}
+function collectFragment(){
+ if([2,4,6,8,10].indexOf(s.floor)>=0&&s.fragmentFloors.indexOf(s.floor)<0){
+  s.fragmentFloors.push(s.floor);s.fragments=Math.min(5,s.fragments+1);
+  s.log="You recover Master Loot fragment "+s.fragments+"/5. The ring stirs.";
+  return " 🗝️ MASTER LOOT "+s.fragments+"/5."
+ }
+ return ""
+}
+function enterMap(){
+ var newFragment=collectFragment();s.mode="map";s.enemy=null;
+ s.roomChoices=(RoomMenu[s.floor+1]||["boss"]).slice();
+ s.dialogue="The ring weighs on your finger. Three paths wind higher."+newFragment;
+ render();save()
+}
+function nextFloor(kind){
+ if(s.mode!=="map")return;
+ if(s.roomChoices.indexOf(kind)<0)return;
+ s.nextKind=kind;s.floor++;startFloor()
+}
+function chooseReward(key){
+ if(s.mode!=="reward")return;
+ if(key!=="skip"&&Card[key])s.deck.push(key);
+ s.log=key==="skip"?"You leave the cards behind.":"Added "+Card[key].name+" to your deck.";
+ enterMap()
+}
+function camp(action){
+ if(s.mode!=="camp")return;
+ if(action==="heal"){hpAdd(20);s.log="You mend your wounds by the fire."}
+ else if(action==="upgrade"){var choices=s.deck.filter(function(k){return !up(k)});if(choices.length){var chosen=choices[rand(choices.length)],i=s.deck.indexOf(chosen);s.deck[i]=chosen+"+";s.log=Card[chosen].name+" improved."}else{hpAdd(12);s.log="All cards improved already; you heal instead."}}
+ else if(action==="study"){s.stats.lor++;s.log="An old knight teaches you something of the tower. Lore +1."}
+ else return;
+ enterMap()
+}
+function check(stat,dc){
+ var roll=1+rand(20),bonus=s.stats[stat]+(stat==="cun"?(has("dice")?2:0)+(has("lockpick")?2:0):stat==="grt"?(has("spider")?2:0):(has("chapel")?2:0));
+ return {roll:roll,total:roll+bonus,success:roll===20||(roll!==1&&roll+bonus>=dc)}
+}
+function gainCard(){
+ var pool=Object.keys(Card).filter(function(k){return k!=="strike"&&k!=="guard"}),chosen=pool[rand(pool.length)];
+ s.deck.push(chosen);return Card[chosen].name
+}
+function chooseEvent(index){
+ if(s.mode!=="event"||s.roomResolved)return;
+ var ev=Events[s.eventId],opt=ev&&ev.opts[index];if(!opt)return;s.roomResolved=true;
+ var kind=opt[1],result="",checkText="";
+ if(kind==="leave"){result="You keep moving. Sometimes survival means refusing a bargain."}
+ else if(kind==="sacrifice"){
+  if(s.hp<=7){s.roomResolved=false;toast("NOT ENOUGH HP");return}
+  s.hp-=7;result="You sacrifice 7 HP and claim "+randomRelic()+".";
+ }else if(kind==="ring"){
+  var roll=rand(3);
+  if(roll===0){s.gold+=25;result="The cursed ring picks the lock. +25 gold."}
+  else if(roll===1){result="The ring slips through the lock. "+randomRelic()+"."}
+  else {s.hp=Math.max(1,s.hp-5);result="The ring demands blood. Lose up to 5 HP."}
+ }else if(kind==="sell"){s.gold+=18;result="A hooded buyer pays 18 gold for the forbidden book."}
+ else {
+  var roll=check(kind,opt[2]);checkText="🎲 d20 "+roll.roll+" + bonus = "+roll.total+" vs DC "+opt[2]+". ";
+  if(roll.success){
+   if(s.eventId==="prisoner"){s.stats.cun++;result="The prisoner reveals a hidden route. Cunning +1."}
+   else if(s.eventId==="chapel"){hpAdd(10);s.stats.lor++;result="The chapel grants 10 healing and Lore +1."}
+   else if(s.eventId==="tome"){result="You copy a spell: "+gainCard()+" added to deck."}
+   else if(s.eventId==="bell"){s.gold+=22;result="You slip past the patrol and find 22 gold."}
+   else if(s.eventId==="mirror"){result="The reflection lets go: "+randomRelic()+"."}
+   else if(s.eventId==="reliquary"){result="The lock opens: "+randomRelic()+"."}
+   else{s.gold+=20;result="You beat the goblin's loaded dice and collect 20 gold."}
+  }else{
+   var damage=Math.min(s.hp-1,4+rand(5));
+   s.hp-=damage;result="The check fails. The tower takes "+damage+" HP.";
+   if(s.eventId==="dice"){s.gold+=5;result+=" The goblin pays 5 gold for trying."}
+  }
+ }
+ s.log=checkText+result;s.history.push({floor:s.floor,event:s.eventId,choice:opt[0],outcome:s.log});
+ enterMap()
+}
+function chooseEventCard(key){
+ if(s.mode!=="event"||s.roomResolved)return;
+ if(!s.deck.some(function(k){return cardKey(k)===key}))return;
+ if(key==="pickpocket"&&s.eventId==="prisoner"){s.roomResolved=true;s.gold+=12;s.log="Pickpocket (story): steal the jailer's key, free the prisoner, and earn 12 gold."}
+ else if(key==="smoke"&&s.eventId==="bell"){s.roomResolved=true;s.gold+=16;s.log="Smoke Bomb (story): cross the hall unseen and pocket 16 gold."}
+ else return;
+ s.history.push({floor:s.floor,event:s.eventId,choice:key,outcome:s.log});enterMap()
+}
+
+function treasure(action){
+ if(s.mode!=="treasure"||s.roomResolved)return;
+ if(["lock","smash","leave"].indexOf(action)<0)return;
+ s.roomResolved=true;var msg="";
+ if(action==="leave")msg="You leave the chest untouched. No second chances and no regrets.";
+ else{
+  var result=check(action==="lock"?"cun":"grt",action==="lock"?11:13);
+  if(result.success){var g=20+s.floor*4;s.gold+=g;msg="🎲 "+result.total+" · The coffer opens. +"+g+" gold and "+randomRelic()+"."}
+  else{var hit=Math.min(s.hp-1,8);s.hp-=hit;msg="🎲 "+result.total+" · The chest trap snaps! Lose "+hit+" HP. No loot."}
+ }
+ s.log=msg;s.history.push({floor:s.floor,event:"chest",choice:action,outcome:msg});enterMap()
+}
+function merchant(action){
+ if(s.mode!=="merchant"||!s.shopStock)return;
+ var stock=s.shopStock,price;
+ if(action==="leave"){s.log="The merchant waves goodbye, counting coins you no longer have.";enterMap();return}
+ if(action==="potion"){price=12;if(stock.potionBought||s.gold<price)return;s.gold-=price;s.potions++;stock.potionBought=true;s.log="Bought one healing potion for 12 gold."}
+ else if(action==="card"){price=20;if(stock.cardBought||s.gold<price)return;s.gold-=price;s.deck.push(stock.card);stock.cardBought=true;s.log="Bought "+Card[stock.card].name+" for 20 gold."}
+ else if(action==="relic"){price=55;if(stock.relicBought||s.gold<price||!stock.relic)return;s.gold-=price;getRelic(stock.relic);stock.relicBought=true;s.log="Bought "+Relic[stock.relic].name+" for 55 gold."}
+ else return;
+ s.dialogue="“A pleasure. My inventory stays sold when it's sold.”";sound(570);render();save()
+}
+function beginOrigin(kind){
+ if(s.mode!=="origin")return;
+ s.origin=kind;
+ if(kind==="cutpurse"){s.stats={cun:3,grt:1,lor:1};s.deck.push("pickpocket")}
+ else if(kind==="shadow"){s.stats={cun:2,grt:2,lor:1};s.deck.push("evade")}
+ else if(kind==="charlatan"){s.stats={cun:2,grt:1,lor:3};s.deck.push("flash")}
+ else return;
+ s.log="You chose the "+kind+". The Thief's Ring is yours, but you are not its master.";
+ startFloor()
+}
+function reset(){modalState="";s=initial();render();save()}
+
+function statuses(who){var e=who==="enemy"?s.enemy:s;if(!e)return "";var arr=[];if(e.bleed>0)arr.push("🩸 "+e.bleed);if(e.weak>0)arr.push("💫 Weak "+e.weak);if(e.exposed>0)arr.push("🎯 Exposed "+e.exposed);if(e.buff>0)arr.push("⬆ "+e.buff);return arr.length?arr.map(function(v){return '<span class="status">'+v+"</span>"}).join(""):'<span class="status" style="opacity:.5">NO EFFECTS</span>'}
+function renderCards(){var box=id("hand");box.innerHTML="";if(s.mode!=="battle"){box.innerHTML='<div style="padding:35px;color:#a3bcb2;font:italic 16px Georgia">Your cards will return when the next battle begins…</div>';return}
+ s.hand.forEach(function(key,i){var c=Card[cardKey(key)];if(!c)return;var el=document.createElement("button");el.className="card "+c.type+(s.energy<c.cost?" off":"");el.setAttribute("aria-label",c.name+", "+c.cost+" energy");el.innerHTML='<span class="cost">'+c.cost+'</span>'+(up(key)?'<span class="up">★</span>':"")+'<span class="glyph">'+c.icon+'</span><span class="title">'+c.name+'</span><span class="desc">'+(up(key)?"★ Upgraded · ":"")+c.desc+'</span><span class="type">'+c.type.toUpperCase()+'</span>';el.addEventListener("click",function(){playCard(i)});box.appendChild(el)})
+}
+
+function choice(icon,title,desc,action,disabled){
+ return '<button class="choice" data-action="'+action+'"'+(disabled?' disabled aria-disabled="true"':'')+'><span class="icon">'+icon+'</span><span><strong>'+title+'</strong><small>'+desc+'</small></span></button>'
+}
+function renderModal(){
+ var box=id("modalcontent"),show=s.mode!=="battle"||modalState!=="";
+ id("modal").classList.toggle("show",show);
+ id("modal").classList.toggle("combat-result",show&&!modalState&&["reward","won","lost"].indexOf(s.mode)>=0);
+ if(!show){box.innerHTML="";return}
+ var h="",k,ev;
+ if(modalState==="bag"){
+  h='<div class="modaleyebrow">THE THIEF’S SATCHEL</div><h2>Inventory & Story</h2><p>🪙 '+s.gold+' GOLD · 🧪 '+s.potions+' POTIONS · 🗝️ '+s.fragments+'/5 FRAGMENTS<br>🎲 CUN '+s.stats.cun+' · GRT '+s.stats.grt+' · LOR '+s.stats.lor+'</p><div class="inventory"><strong>💍 THE THIEF’S RING</strong><br>Permanent and cursed. Activate once per battle.<hr><strong>RELICS</strong><br>';
+  h+=(s.relics.length?s.relics.map(function(r){return Relic[r].icon+' <b>'+Relic[r].name+'</b>: '+Relic[r].desc}).join("<br>"):"None yet.");
+  h+='<hr><strong>DECK · '+s.deck.length+' CARDS</strong><br>'+s.deck.map(function(key){var c=Card[cardKey(key)];return c?c.icon+" "+c.name+(up(key)?" ★":""):"Unknown"}).join(" · ");
+  h+='<hr><strong>JOURNAL</strong><br>'+(s.history.length?s.history.map(function(x){return "Floor "+x.floor+": "+x.outcome}).join("<br>"):"The ink is still dry.")+'</div>';
+  h+='<button class="action secondary" data-action="close">BACK TO GAME</button><button class="action secondary" data-action="new">START A NEW RUN</button>';
+ }else if(s.mode==="origin"){
+  h='<div class="modaleyebrow">THE RING REMEMBERS</div><h2>Choose Your Rogue</h2><p>“In the Slums, they called Master Loot a myth. Then you stole the ring.” Choose your background and starting card.</p><div class="choices">';
+  h+=choice("🗡️","THE CUTPURSE","Cunning 3 · Grit 1 · Lore 1 · Start with Pickpocket","origin:cutpurse");
+  h+=choice("🥷","THE SHADOW","Cunning 2 · Grit 2 · Lore 1 · Start with Evasion Roll","origin:shadow");
+  h+=choice("🎭","THE CHARLATAN","Cunning 2 · Grit 1 · Lore 3 · Start with Flash Powder","origin:charlatan");
+  h+='</div>';
+ }else if(s.mode==="map"){
+  h='<div class="modaleyebrow">CHOOSE YOUR ROUTE · FLOOR '+(s.floor+1)+'/12</div><h2>Three Paths Above</h2><p>'+s.log+'<br><br>“Every door is a gamble. Every gamble is a story.”</p><div class="choices">';
+  (s.roomChoices||[]).forEach(function(key){var info=RoomInfo[key];if(info)h+=choice(info[0],info[1],info[2],"room:"+key)});
+  h+='</div><p style="font-size:11px">Each room may be cleared once.</p>';
+ }else if(s.mode==="reward"){
+  h='<div class="modaleyebrow">VICTORY · FLOOR '+s.floor+'</div><h2>Claim Your Spoils</h2><p>'+s.lootText+'<br>Add one card to your deck.</p><div class="choices">';
+  (s.rewardChoices||[]).forEach(function(key){var c=Card[key];if(c)h+=choice(c.icon,c.name,c.cost+" ENERGY · "+c.desc,"reward:"+key)});
+  h+='</div><button class="action secondary" data-action="reward:skip">SKIP CARD</button>';
+ }else if(s.mode==="camp"){
+  h='<div class="modaleyebrow">FLOOR '+s.floor+' · REST CHAMBER</div><h2>Campfire & Tales</h2><p>“At least the fire is not trying to rob us,” mutters a wandering knight.</p><div class="choices">';
+  h+=choice("💚","BANDAGE WOUNDS","Recover up to 20 HP.","camp:heal");
+  h+=choice("⚒️","HONE YOUR WEAPON","Upgrade one unupgraded card.","camp:upgrade");
+  h+=choice("📖","STUDY OLD MAPS","Gain +1 Lore for future d20 checks.","camp:study");
+  h+='</div>';
+ }else if(s.mode==="treasure"){
+  h='<div class="modaleyebrow">FLOOR '+s.floor+' · TREASURY</div><h2>The Silent Coffer</h2><p>One chest, one decision. The tower keeps score.</p><div class="choices">';
+  h+=choice("🗝️","PICK THE LOCK","Roll d20 + Cunning against DC 11.","treasure:lock");
+  h+=choice("🔨","BREAK THE HINGES","Roll d20 + Grit against DC 13.","treasure:smash");
+  h+=choice("🚪","LEAVE IT","No treasure, no trap.","treasure:leave");
+  h+='</div>';
+ }else if(s.mode==="merchant"){
+  var stock=s.shopStock||{};
+  h='<div class="modaleyebrow">FLOOR '+s.floor+' · BLACK MARKET</div><h2>The Merchant</h2><p>“Stolen goods, honest prices.” 🪙 '+s.gold+' GOLD</p><div class="choices">';
+  h+=choice("🧪","POTION · 12G","Restores 16 HP. Only one in stock.","shop:potion",!!stock.potionBought||s.gold<12);
+  h+=choice(stock.card&&Card[stock.card]?Card[stock.card].icon:"🃏",stock.card&&Card[stock.card]?Card[stock.card].name+" · 20G":"SOLD OUT",stock.card&&Card[stock.card]?Card[stock.card].desc:"No card stocked.","shop:card",!!stock.cardBought||s.gold<20);
+  h+=choice(stock.relic&&Relic[stock.relic]?Relic[stock.relic].icon:"💍",stock.relic&&Relic[stock.relic]?Relic[stock.relic].name+" · 55G":"NO RELIC",stock.relic&&Relic[stock.relic]?Relic[stock.relic].desc:"No relic stocked.","shop:relic",!!stock.relicBought||s.gold<55||!stock.relic);
+  h+='</div><button class="action secondary" data-action="shop:leave">LEAVE MARKET · NEXT ROOM</button>';
+ }else if(s.mode==="event"){
+  ev=Events[s.eventId]||Events.dice;
+  h='<div class="modaleyebrow">FLOOR '+s.floor+' · DUNGEON ENCOUNTER</div><h2>'+ev.icon+' '+ev.name+'</h2><p>'+ev.text+'</p><div class="choices">';
+  ev.opts.forEach(function(opt,i){h+=choice(["🎲","🗡️","🚪"][i],opt[0],"Choose once. The consequences are permanent.","event:"+i,opt[1]==="sacrifice"&&s.hp<=7)});
+  if(s.eventId==="prisoner"&&s.deck.some(function(k){return cardKey(k)==="pickpocket"}))h+=choice("🪙","USE PICKPOCKET CARD","Event effect: steal the jailer's key.","eventcard:pickpocket");
+  if(s.eventId==="bell"&&s.deck.some(function(k){return cardKey(k)==="smoke"}))h+=choice("💨","USE SMOKE BOMB CARD","Event effect: pass the patrol unseen.","eventcard:smoke");
+  h+='</div>';
+ }else if(s.mode==="lost"){
+  h='<div class="modaleyebrow">THE TOWER REMAINS</div><h2>You Fell on Floor '+s.floor+'</h2><p>After '+s.wins+' battles, with '+s.fragments+'/5 fragments and '+s.gold+' gold, the thief’s tale ends. Not the tower.</p><button class="action" data-action="restart">TRY AGAIN</button>';
+ }else if(s.mode==="won"){
+  h='<div class="modaleyebrow">THE GOLDEN VAULT IS YOURS</div><h2>THE MASTER THIEF</h2><p>🪙 '+s.gold+' GOLD · 🗝️ '+s.fragments+'/5 FRAGMENTS · '+s.wins+' BATTLES<br>“You may keep the gold,” says the ring. “I kept the stories.”<br><br>'+(s.fragments===5?"All five fragments reassemble. The heist is complete.":"The Warden falls. Some fragments remain lost.")+'</p><button class="action" data-action="restart">NEW HEIST</button>';
+ }else h='<h2>The Ring Waits</h2><button class="action" data-action="restart">NEW RUN</button>';
+ box.innerHTML=h
+}
+
+
+function render(){
+ id("floor").textContent="FLOOR "+String(s.floor).padStart(2,"0")+" / 12";
+ id("gold").textContent="🪙 "+s.gold+" GOLD";
+ id("fragments").textContent=s.fragments+"/5";
+ id("stats").textContent="CUN "+s.stats.cun+" · GRT "+s.stats.grt+" · LOR "+s.stats.lor;
+ id("relics").innerHTML=s.relics.length?s.relics.map(function(r){return '<span class="relic" data-relic="'+r+'" title="'+Relic[r].name+'">'+Relic[r].icon+"</span>"}).join(""):'<span class="empty-relic">Nothing stolen yet</span>';
+ id("room").textContent=s.floor>=12?"THE GOLDEN VAULT":s.floor>=9?"THE IRON HEIGHTS":s.floor>=5?"THE INNER KEEP":"THE LOWER KEEP";
+ id("encounter-name").textContent=s.mode==="origin"?"THE SLUMS":s.mode==="camp"?"REST CHAMBER":s.mode==="won"?"VAULT OPEN":"FLOOR "+String(s.floor).padStart(2,"0");
+ id("npc-line").textContent=s.dialogue||"The ring grows colder.";
+ id("player-hp").textContent=s.hp+" / "+s.maxHp+" HP";
+ id("player-fill").style.width=(100*s.hp/s.maxHp)+"%";
+ id("player-block").textContent="🛡 "+s.block;id("player-status").innerHTML=statuses("player");
+ var e=s.enemy;
+ id("enemy-side").style.visibility=e?"visible":"hidden";
+ id("enemy-name").textContent=e?e.name:"THE TOWER";
+ id("enemy-hp").textContent=e?e.hp+" / "+e.maxHp+" HP":"—";
+ id("enemy-fill").style.width=e?(100*e.hp/e.maxHp)+"%":"0%";
+ id("enemy-block").textContent="🛡 "+(e?e.block:0);
+ id("enemy-status").innerHTML=statuses("enemy");
+ var inf=intentInfo();id("intent").textContent=inf.name;id("intent").className="intent "+inf.cls;
+ id("intent-detail").textContent=inf.detail;
+ id("energy").textContent=s.energy;
+ id("deckinfo").textContent="DRAW "+s.draw.length+" · DISCARD "+s.discard.length;
+ id("foot").textContent="TAP CARDS · DRAW "+s.draw.length+" · DISCARD "+s.discard.length+" · SWIPE FOR MORE";
+ id("ringbutton").disabled=s.mode!=="battle"||s.ringUsed;
+ id("ringbutton").title=s.ringUsed?"RING SPENT THIS BATTLE":"Use cursed ring once this battle";
+ id("potion").textContent="🧪 "+s.potions;
+ id("potion").disabled=s.potions<1||s.hp>=s.maxHp||s.mode==="lost"||s.mode==="won";
+ id("endturn").disabled=s.mode!=="battle";
+ id("battlelog").textContent=s.log;
+ renderCards();renderModal();
+ sprite(id("thief-sprite"),"thief");
+ sprite(id("enemy-sprite"),e?e.id:"guard");
+ if(typeof drawBackdrop==="function")drawBackdrop(Date.now())
+}
+id("endturn").addEventListener("click",endTurn);
+id("ringbutton").addEventListener("click",useRing);
+id("potion").addEventListener("click",drinkPotion);
+id("bag").addEventListener("click",function(){modalState="bag";renderModal()});
+id("sound").addEventListener("click",function(){soundOn=!soundOn;id("sound").textContent=soundOn?"♫":"♪";sound(520)});
+id("modal").addEventListener("click",function(ev){
+ var btn=ev.target.closest("[data-action]");if(!btn||btn.disabled)return;
+ var action=btn.getAttribute("data-action");
+ if(action==="close"){modalState="";renderModal();return}
+ if(action==="new"){if(confirm("Start a fresh run? Current progress will be erased."))reset();return}
+ if(action==="restart"){reset();return}
+ if(action.indexOf("origin:")===0){beginOrigin(action.slice(7));return}
+ if(action.indexOf("reward:")===0){chooseReward(action.slice(7));return}
+ if(action.indexOf("room:")===0){nextFloor(action.slice(5));return}
+ if(action.indexOf("camp:")===0){camp(action.slice(5));return}
+ if(action.indexOf("event:")===0){chooseEvent(Number(action.slice(6)));return}
+ if(action.indexOf("eventcard:")===0){chooseEventCard(action.slice(10));return}
+ if(action.indexOf("shop:")===0){merchant(action.slice(5));return}
+ if(action.indexOf("treasure:")===0){treasure(action.slice(9));return}
+});
+
+
+/* Distinct, readable motion language:
+   SWORD = lunge + diagonal slash; STAB = dash + bright thrust;
+   DOUBLE = two slash trails; ARROW = traveling bolt;
+   SPELL = glowing orb; BLOCK = shield flash; HEAL = green sparks. */
+
+function cardLaunch(card){
+ try{var ghost=document.createElement("span");ghost.className="card-ghost";ghost.textContent=card.icon;id("game").appendChild(ghost);setTimeout(function(){ghost.remove()},690)}catch(e){}
+}
+function relicPulse(which){
+ try{var parent=id("relics");if(!parent.querySelector)return;var slot=parent.querySelector('[data-relic="'+which+'"]');if(!slot)return;slot.classList.remove("triggered");void slot.offsetWidth;slot.classList.add("triggered");setTimeout(function(){slot.classList.remove("triggered")},620)}catch(e){}
+}
+
+function attackFx(side,type){
+ var player=side==="player",attacker=id(player?"player-side":"enemy-side"),
+ target=id(player?"enemy-side":"player-side"),arena=id("game"),
+ layer=id("battlefx"),div=document.createElement("div"),decor="",defense=type==="block"||type==="heal"||type==="buff";
+ try{
+  attacker.classList.remove("lunge","blocking");
+  if(!defense&&type!=="arrow"&&type!=="magic")attacker.classList.add("lunge");
+  else if(defense)attacker.classList.add("blocking");
+  div.className=(type==="slash"||type==="stab"||type==="double")?"fx-slash "+(!player?"enemy ":"")+(type==="double"?"double":""):
+    type==="arrow"?"fx-arrow "+(player?"player":""):
+    type==="magic"?"fx-magic "+(player?"player":""):
+    "fx-puff "+(player?"player":"");
+  if(type==="stab"){div.style.height="3px";div.style.width="115px";div.style.transform="rotate(-8deg)"}
+  if(type==="block")div.textContent="🛡️";
+  if(type==="heal")div.textContent="💚";
+  if(type==="buff")div.textContent="⬆️";
+  layer.appendChild(div);
+  if(!defense){
+   var spark=document.createElement("div");spark.className="fx-spark";if(!player)spark.style.left="25%";layer.appendChild(spark);setTimeout(function(){spark.remove()},530);
+   setTimeout(function(){target.classList.add("hit");if(type==="slash"||type==="double"||type==="stab")arena.classList.add("shaking")},170)
+  }
+  setTimeout(function(){div.remove();attacker.classList.remove("lunge","blocking");target.classList.remove("hit");arena.classList.remove("shaking")},650)
+ }catch(e){}
+}
+function drawBackdrop(t){
+ var canvas=id("backdrop"),c=canvas.getContext("2d");if(!c)return;
+ c.imageSmoothingEnabled=false;
+ var zone=s.floor>=12?3:s.floor>=9?2:s.floor>=5?1:0;
+ var palettes=[
+ ["#111f29","#243741","#354b4b","#405653","#1b2e36","#8c8668"],
+ ["#131f26","#2a3b37","#435341","#455947","#1b2e28","#a59a66"],
+ ["#111d30","#243449","#39465b","#47566b","#172239","#bbc4c5"],
+ ["#1b1730","#373048","#524365","#614c68","#241b35","#d7b179"]
+ ];
+ var p=palettes[zone],mode=s.mode;
+ function R(x,y,w,hh,color){c.fillStyle=color;c.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(hh))}
+ function L(x,y,x2,y2,color,w){c.strokeStyle=color;c.lineWidth=w||1;c.beginPath();c.moveTo(x,y);c.lineTo(x2,y2);c.stroke()}
+ R(0,0,320,220,p[0]);R(0,0,320,155,p[1]);
+ // Castled wall and staggered masonry.
+ for(var row=0;row<9;row++){
+  for(var col=0;col<11;col++){
+   var x=col*34-(row%2)*17,y=8+row*18;
+   R(x+1,y+1,31,15,(row+col)%4===0?p[3]:(row*7+col)%3===0?p[2]:p[1]);
+   R(x+2,y+2,27,1,"#7f948047")
+  }
+ }
+ // Distant stair / arched gateway behind the duel.
+ R(124,38,72,123,"#111a26");
+ R(116,65,88,96,"#16242d");
+ R(124,40,72,125,p[5]);R(128,44,64,121,"#0e1925");
+ R(136,30,48,119,"#111a23");R(141,27,38,125,"#101d28");
+ R(148,22,24,130,"#0a1720");
+ for(var i=0;i<5;i++){R(141,81+i*14,38,2,"#60706a55")}
+ // Windows and their distinct zone lighting.
+ var glass=zone===3?"#d49b77":zone===2?"#90a5c3":zone===1?"#75998e":"#87acac";
+ [68,233].forEach(function(wx){
+  R(wx-11,54,22,68,p[0]);R(wx-8,54,16,59,glass);R(wx-6,57,12,53,"#264954");
+  R(wx-1,55,3,58,p[0]);R(wx-8,85,16,3,p[0]);
+  R(wx-9,111,19,10,p[5]);R(wx-11,119,23,4,"#15212b")
+ });
+ // Giant stone uprights, banner and ironwork.
+ [22,291].forEach(function(x){R(x-12,6,26,153,p[0]);R(x-9,10,19,142,p[2]);R(x-5,14,5,133,p[3]);R(x-15,18,32,9,p[5]);R(x-16,146,34,11,p[0])});
+ R(110,6,101,12,p[0]);R(120,18,83,7,p[2]);
+ R(106,0,7,37,p[0]);R(204,0,7,37,p[0]);
+ // Banner panels on middle heights.
+ if(zone>=1){R(93,26,14,47,zone===3?"#96565b":"#567066");R(93,69,14,4,p[5]);R(213,26,14,47,zone===3?"#96565b":"#567066");R(213,69,14,4,p[5])}
+ // Torches, flames and flickering glints.
+ [40,282].forEach(function(x,j){
+  var flame=Math.sin((t||0)/140+j*2)*3,fy=53+flame;
+  R(x-6,80,13,5,"#111b23");R(x-2,66,5,14,"#9a8459");R(x-4,70,9,5,"#d4b975");
+  R(x-6,fy,13,15,"#b85f42");R(x-3,fy-7,7,17,"#e9a65d");R(x-1,fy-11,3,17,"#ffe8a4");
+  R(x-11,88,23,2,"#ffd27d25");
+ });
+ // Main stone promenade, deep grid / perspective.
+ R(0,157,320,63,p[0]);R(0,158,320,5,p[3]);
+ for(var k=0;k<6;k++){var yy=168+k*11;R(0,yy,320,2,"#75897a54")}
+ for(var l=-6;l<14;l++){L(160,158,l*44,220,"#455a57a0",1)}
+ R(0,210,320,10,"#0b1922");
+ // Interactive room dressing.
+ if(mode==="merchant"){
+  R(200,115,91,43,"#473b39");R(192,111,106,12,"#8a5a56");R(195,119,100,4,"#d2a57a");
+  for(var a=0;a<4;a++){R(210+a*20,98-(a%2)*5,9,15,["#ba8490","#88a5ba","#b2a06a","#799a8b"][a]);R(211+a*20,95-(a%2)*5,7,4,"#f4d3ac")}
+  R(217,130,62,12,"#54463b");R(241,134,13,7,"#f8ca67");
+ }else if(mode==="treasure"){
+  R(192,129,84,39,"#694f44");R(189,121,91,14,"#98704f");R(196,117,76,9,"#baa479");
+  R(199,137,7,29,"#deb771");R(264,137,7,29,"#deb771");R(233,132,13,23,"#dfc777");R(239,138,3,12,"#73563b");
+ }else if(mode==="camp"){
+  R(145,145,24,16,"#574a43");R(137,155,43,8,"#9b6d4d");
+  R(148,137,13,21,"#ce673e");R(151,130+Math.sin(t/200)*2,7,21,"#f9bf65");R(154,127+Math.sin(t/180)*2,3,22,"#fff3ae");
+ }else if(mode==="event"){
+  R(192,139,77,17,"#6d6173");R(199,123,63,19,"#4c4554");R(221,95,21,30,"#8a6b89");R(226,84,10,17,"#e4c0a3")
+ }else if(mode==="origin"){
+  R(218,145,82,14,"#25373b");R(226,138,66,7,"#3e5a57")
+ }else if(zone===3){
+  R(218,123,88,30,"#a18a5e");R(224,130,76,18,"#4d3c3e");
+  R(256,137,14,11,"#e2bd76");
+ }
+ // Dust / ember motes loop gracefully.
+ for(var z=0;z<13;z++){
+  var dx=(z*83+33)%310,dy=((z*37+(t||0)*(0.008+z%3*.004))%145);
+  R(dx,dy,1+z%2,1+z%2,z%4===0?"#ffe4a49a":"#d8e4ce66")
+ }
+}
+if(typeof setInterval==="function")setInterval(function(){if(typeof document==="undefined"||!document.hidden)drawBackdrop(Date.now())},185);
+
+function sprite(canvas,type){
+ var c=canvas.getContext("2d");c.clearRect(0,0,64,64);c.imageSmoothingEnabled=false;
+ function R(x,y,w,h,col){c.fillStyle=col;c.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h))}
+ function P(pts,col){c.fillStyle=col;c.beginPath();c.moveTo(pts[0][0],pts[0][1]);for(var i=1;i<pts.length;i++)c.lineTo(pts[i][0],pts[i][1]);c.closePath();c.fill()}
+ function O(x,y,w,h,col,inner){R(x-2,y-2,w+4,h+4,col);R(x,y,w,h,inner)}
+ // Crisp ground shadow.
+ R(15,57,38,3,"#0d2329");
+ if(type==="thief"){
+  var edge="#192634",hood="#344855",mid="#526771",light="#7a9086",trim="#c3b48c",skin="#d2b181";
+  // boots, trailing cape, dagger
+  R(22,50,11,8,edge);R(39,49,10,9,edge);R(23,50,7,5,mid);R(40,49,7,6,mid);
+  P([[21,30],[44,29],[52,51],[42,54],[18,51],[12,43]],edge);
+  P([[22,32],[43,32],[47,49],[36,51],[19,47],[16,42]],hood);
+  R(26,39,17,6,"#283543");R(27,40,15,2,trim);
+  P([[8,43],[13,37],[19,42],[12,50]],"#879e92");
+  P([[7,45],[12,39],[16,42],[11,49]],"#e4e6c9");
+  R(12,32,10,12,edge);R(14,34,8,8,mid);
+  R(44,33,7,12,edge);R(44,35,5,9,mid);R(48,42,5,4,skin);
+  P([[17,14],[23,8],[37,7],[49,15],[51,29],[46,36],[18,35],[13,29]],edge);
+  P([[20,14],[26,10],[36,10],[46,16],[48,26],[41,32],[20,30],[16,26]],hood);
+  P([[22,14],[31,11],[42,15],[44,19],[22,18]],mid);
+  R(22,20,22,13,edge);P([[22,24],[27,19],[40,21],[43,27],[36,34],[27,30]],"#0d1727");
+  R(29,25,4,2,trim);R(39,25,3,2,trim);
+  R(18,28,7,3,light);R(40,31,7,2,trim);R(27,35,15,3,"#62445d");
+ }else if(type==="guard"||type==="knight"||type==="warden"){
+  var boss=type==="warden",kn=type==="knight"||boss;
+  var edge2="#212735",iron=kn?"#728da2":"#8c948f",shine=kn?"#acc5c6":"#c0bfac",dark="#465766",accent=boss?"#dcb768":kn?"#5b8f96":"#ba6658";
+  R(19,46,11,11,edge2);R(37,46,11,11,edge2);R(20,48,9,8,dark);R(38,48,9,8,dark);
+  P([[20,29],[45,29],[49,49],[35,53],[17,49]],edge2);
+  P([[22,31],[44,31],[45,46],[35,48],[20,46]],accent);
+  R(22,33,23,15,edge2);R(25,34,18,13,iron);R(27,37,14,8,dark);R(29,38,10,6,shine);
+  R(14,32,11,14,edge2);R(16,33,7,13,iron);R(43,33,10,15,edge2);R(45,34,7,12,iron);
+  // sword
+  R(8,29,3,21,"#c4d6ce");R(7,26,5,9,"#eef3db");R(4,40,11,3,"#bfa46d");R(8,43,3,9,"#594c3c");
+  // helmet
+  R(23,14,22,20,edge2);R(25,15,18,18,iron);R(25,21,18,5,shine);R(27,27,14,3,edge2);
+  R(28,27,4,2,boss?"#ffbd70":"#151e27");R(36,27,4,2,boss?"#ffbd70":"#151e27");
+  R(29,31,10,2,edge2);
+  if(kn){R(24,12,20,5,edge2);R(28,10,13,5,shine);R(34,6,5,7,accent)}
+  else{R(30,9,7,9,"#943c45");R(27,11,12,3,"#b55b54")}
+  if(boss){P([[21,19],[14,6],[23,13]],"#dec17c");P([[45,19],[54,6],[44,13]],"#dec17c");R(28,16,12,3,"#e8d992")}
+  // shield
+  P([[45,34],[57,36],[55,49],[49,55],[43,48]],edge2);
+  P([[47,37],[54,38],[53,47],[49,51],[46,47]],kn?"#6a9ba0":"#ab665a");
+  R(49,40,2,8,"#ddd8b4");R(47,43,6,2,"#ddd8b4");
+ }else if(type==="goblin"){
+  var e="#25353b";R(21,46,9,10,e);R(37,46,9,10,e);R(21,44,24,8,"#6a5043");
+  P([[20,30],[45,30],[48,48],[19,47]],e);R(24,33,18,13,"#8e7448");R(30,37,6,7,"#c2a566");
+  P([[16,23],[5,14],[9,30],[19,32]],e);P([[46,23],[59,13],[56,30],[44,33]],e);
+  P([[18,24],[9,19],[14,29]],"#79a86b");P([[44,24],[55,18],[51,29]],"#79a86b");
+  R(17,18,30,18,e);R(20,20,25,14,"#5d9164");R(20,24,25,7,"#8bb075");
+  R(25,27,5,3,"#e5cc77");R(37,27,5,3,"#e5cc77");R(27,28,2,2,e);R(39,28,2,2,e);
+  R(29,34,11,3,e);R(32,36,3,3,"#e7ddb0");R(37,36,3,3,"#e7ddb0");
+  P([[8,38],[14,31],[17,35],[11,46]],"#d0d2b8");R(46,36,9,4,"#a0774a");
+ }else if(type==="slime"){
+  var edge3="#233e43";P([[15,50],[12,44],[14,34],[23,24],[37,20],[49,27],[54,40],[51,51],[45,55],[20,55]],edge3);
+  P([[18,48],[18,36],[26,28],[39,26],[48,32],[50,45],[44,51],[22,51]],"#529981");
+  R(22,33,23,8,"#7abc95");R(20,43,28,5,"#3c806e");R(26,36,6,5,"#152b33");R(40,36,5,5,"#152b33");R(27,36,3,3,"#e7e6a9");R(41,36,2,3,"#e7e6a9");
+ }else if(type==="cultist"||type==="wraith"){
+  var ghost=type==="wraith";var shell=ghost?"#544e79":"#8f434f",highlight=ghost?"#8b89ae":"#b35b66",outline="#262638";
+  P([[29,9],[40,11],[48,22],[52,42],[44,54],[36,50],[28,56],[15,48],[16,25]],outline);
+  P([[28,12],[39,14],[45,24],[49,42],[43,49],[37,45],[28,52],[19,45],[19,27]],shell);
+  P([[28,13],[35,13],[43,23],[39,27],[23,27]],highlight);
+  P([[22,23],[28,18],[39,22],[42,34],[34,37],[24,32]],"#171d30");
+  R(26,29,5,3,ghost?"#9cead4":"#ffd084");R(37,29,4,3,ghost?"#9cead4":"#ffd084");R(29,39,8,4,ghost?"#98acae":"#5d343f");
+  R(15,35,5,11,shell);R(46,36,5,11,shell);R(18,48,9,3,highlight);
+  if(ghost){R(22,53,5,4,"#6a6f9c");R(35,52,8,5,"#646491")}
+  else{R(28,46,12,5,"#c09460");R(26,48,15,2,"#573b44")}
+ }else if(type==="rat"){
+  var edge4="#2d353c";P([[16,43],[9,34],[15,24],[29,21],[46,28],[53,41],[47,51],[23,52]],edge4);
+  P([[18,41],[15,32],[24,27],[41,29],[48,42],[43,48],[23,48]],"#78817e");
+  R(19,22,10,13,edge4);R(21,23,6,10,"#c9898b");R(37,21,11,13,edge4);R(39,23,7,9,"#c9898b");
+  R(28,34,5,4,"#fae8bc");R(42,34,5,4,"#fae8bc");R(30,35,2,2,edge4);R(44,35,2,2,edge4);R(36,42,6,4,"#dc9b9c");R(19,48,6,7,edge4);R(43,48,6,7,edge4);
+  P([[47,47],[56,43],[60,37],[62,32]],"#d69397");
+ }else if(type==="imp"){
+  var edge5="#342c3a";P([[15,46],[12,27],[18,17],[29,23],[37,14],[48,27],[52,48],[41,54],[22,53]],edge5);
+  P([[19,45],[18,29],[24,22],[33,29],[39,23],[47,31],[48,46],[39,49],[24,49]],"#ad4b46");
+  P([[23,20],[16,6],[31,21]],"#d67d4d");P([[40,20],[51,6],[36,22]],"#d67d4d");
+  R(23,33,7,4,"#f7d17b");R(39,33,6,4,"#f7d17b");R(26,39,16,5,edge5);R(29,42,3,5,"#ecdbb5");R(38,42,3,5,"#ecdbb5");
+  P([[18,43],[6,32],[9,45]],"#d57356");P([[49,43],[59,31],[57,45]],"#d57356")
+ }else if(type==="ogre"){
+  var edge6="#30333c";R(17,43,13,13,edge6);R(39,43,12,13,edge6);R(13,30,40,19,edge6);R(17,32,32,16,"#7f7773");
+  R(18,14,34,23,edge6);R(21,16,28,19,"#967e6e");R(14,25,9,17,"#967e6e");R(47,25,9,17,"#967e6e");
+  P([[22,20],[20,7],[29,18]],"#e0d3b1");P([[45,20],[49,7],[40,18]],"#e0d3b1");
+  R(25,26,7,4,"#e5b47c");R(40,26,6,4,"#e5b47c");R(28,27,3,3,edge6);R(42,27,3,3,edge6);
+  R(27,34,16,7,edge6);R(29,35,3,5,"#efdbb4");R(39,35,3,5,"#efdbb4");R(24,45,24,5,"#4b5055")
+
+ }else if(["archer","jailer","monk","mage","captain"].indexOf(type)>=0){
+  var ink="#1d2735",cloth={archer:"#51765e",jailer:"#606875",monk:"#64755c",mage:"#605883",captain:"#923f51"}[type];
+  var metal={archer:"#b7a579",jailer:"#a4b3b5",monk:"#b7c19f",mage:"#bbabd4",captain:"#b8c5c3"}[type];
+  R(22,49,11,9,ink);R(38,49,11,9,ink);R(24,51,7,6,cloth);R(40,51,7,6,cloth);
+  P([[19,29],[45,29],[51,53],[16,53]],ink);P([[23,31],[43,31],[47,50],[20,49]],cloth);
+  R(25,34,18,13,metal);R(27,37,14,8,ink);R(29,39,10,4,cloth);
+  R(14,32,10,17,ink);R(16,35,8,12,metal);R(44,32,10,17,ink);R(46,35,7,12,metal);
+  P([[20,18],[28,9],[40,10],[50,20],[47,34],[19,34]],ink);
+  P([[23,18],[30,13],[39,13],[46,21],[43,31],[23,31]],cloth);
+  R(26,23,18,10,ink);R(28,26,5,2,"#f0c589");R(39,26,4,2,"#f0c589");
+  if(type==="archer"){
+   P([[18,20],[29,8],[43,15],[47,27]],cloth);
+   R(53,15,2,39,"#d9c598");R(50,20,2,25,"#dacd9e");R(27,34,29,2,"#e6ddad");
+   R(12,32,9,14,"#856b4f");R(14,29,7,6,metal);
+  }else if(type==="jailer"){
+   R(25,19,21,8,metal);R(27,28,17,3,ink);
+   R(9,14,4,40,"#ccd0bb");R(7,14,8,5,metal);R(6,40,11,4,"#a9a3a3");
+   R(48,46,5,12,"#dbb16c");R(45,48,12,2,"#dbb16c");
+  }else if(type==="monk"){
+   P([[17,33],[26,11],[43,12],[52,50]],cloth);
+   R(27,25,17,10,"#d4dbc1");R(29,27,5,3,ink);R(39,27,4,3,ink);
+   P([[33,31],[43,32],[38,38]],"#b5b1a0");
+   R(52,13,4,43,"#b7a57e");R(51,7,8,8,"#9fc48c");
+  }else if(type==="mage"){
+   R(22,18,25,7,"#8480b3");R(28,13,14,8,metal);
+   R(51,16,4,40,"#b4aa90");R(50,8,7,13,"#e6a46d");R(52,3,3,15,"#ffe5ac");
+   R(30,38,14,4,"#d7ba8e");
+  }else if(type==="captain"){
+   P([[17,29],[46,29],[55,52],[14,51]],"#a24d5d");
+   R(24,23,22,7,metal);R(29,26,5,2,"#ff9b6a");R(40,26,4,2,"#ff9b6a");
+   R(32,8,8,7,"#d98a79");R(33,4,5,5,"#b44c57");
+   R(7,22,4,31,"#e1dcca");R(55,19,4,34,"#e1dcca");
+   R(5,42,10,4,"#ac6c59");R(53,42,10,4,"#ac6c59");
+  }
+ }else if(type==="mimic"){
+  var edge="#232937";
+  R(13,30,42,27,edge);R(16,33,36,20,"#77513e");R(17,42,33,9,"#3d2630");
+  for(var a=0;a<8;a++){P([[18+a*4,39],[21+a*4,39],[20+a*4,45]],"#eadab4");P([[18+a*4,47],[21+a*4,47],[20+a*4,42]],"#eadab4")}
+  R(15,26,41,13,edge);R(17,18,37,13,"#95704c");R(19,17,33,8,"#c6a36c");
+  R(25,25,7,4,"#ff8581");R(41,25,7,4,"#ff8581");
+  R(29,32,14,8,"#dfbf77");R(35,35,4,5,edge);
+  R(20,52,8,7,"#644c3a");R(43,52,8,7,"#644c3a");
+ }else if(type==="skeleton"){
+  var bone="#ded7bc",shadow="#283039";
+  R(23,49,9,10,bone);R(39,49,9,10,bone);
+  R(21,32,29,18,shadow);R(25,34,21,15,bone);R(34,34,3,17,shadow);
+  for(var j=0;j<4;j++)R(25,37+j*3,21,1,shadow);
+  R(16,34,8,4,bone);R(17,37,5,14,bone);R(47,34,8,4,bone);R(49,36,5,14,bone);
+  R(25,14,22,21,shadow);R(27,16,18,18,bone);
+  R(28,22,6,6,shadow);R(39,22,5,6,shadow);R(35,28,4,3,shadow);
+  R(29,32,14,3,shadow);
+  R(55,12,3,42,"#e9e8d4");R(52,12,9,7,"#f7f0d5");R(50,42,12,3,"#ae9976")
+
+ }
+ // shared glint for polished 8-bit feel
+ R(52,13,2,2,"#d2d6b28c")
+}
+try{
+ var loaded=JSON.parse(localStorage.getItem(KEY)||"null");
+ if(loaded&&loaded.deck&&typeof loaded.hp==="number"){
+  s=Object.assign(initial(),loaded);s.version=2;
+  s.stats=s.stats||{cun:2,grt:1,lor:1};
+  s.fragmentFloors=s.fragmentFloors||[];s.fragments=s.fragments||0;
+  s.potions=typeof s.potions==="number"?s.potions:2;
+  s.history=s.history||[];s.roomChoices=s.roomChoices||[];
+  s.dialogue=s.dialogue||"The ring remembers a previous heist.";
+  s.origin=s.origin||"cutpurse";s.ringUsed=!!s.ringUsed;
+  if(!loaded.balancePatch){
+   s.maxHp+=8;s.hp=Math.min(s.maxHp,s.hp+8);s.potions+=1;
+   if(s.enemy&&s.mode==="battle"){
+    var enemyProto=Enemies.filter(function(x){return x.id===s.enemy.id})[0];
+    if(enemyProto){
+     var damageAlreadyDealt=Math.max(0,s.enemy.maxHp-s.enemy.hp);
+     s.enemy.maxHp=balancedEnemyHp(enemyProto,s.floor,!!s.elite);
+     s.enemy.hp=Math.max(1,s.enemy.maxHp-damageAlreadyDealt);
+     s.enemy.buff=Math.min(5,s.enemy.buff||0)
+    }
+   }
+   s.balancePatch=1;
+   s.log="The tower grows fairer. Your current run was rebalanced.";
+   save()
+  }
+  if(s.mode==="origin"&&loaded.version===1)s.mode="battle";
+  if(s.mode==="battle"&&!s.enemy)startFloor();
+  else if(s.mode==="map"&&!s.roomChoices.length)s.roomChoices=(RoomMenu[s.floor+1]||["boss"]).slice();
+  render();
+ }else reset()
+}catch(e){s=initial();render();save()}
+})();
+</script>
+</body></html>
