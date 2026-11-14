@@ -44,6 +44,9 @@ function addCSS(){
  var css=[
  "#tsfx-canvas{position:absolute;inset:0;z-index:5;width:100%;height:100%;pointer-events:none;image-rendering:pixelated}",
  "@keyframes tsfx-lunge{0%,100%{transform:translateX(0)}29%{transform:translate(35px,-8px)}53%{transform:translate(51px,2px)}78%{transform:translateX(12px)}}",
+ "@keyframes tsfx-enemy-lunge{0%,100%{transform:translateX(0)}29%{transform:translate(-28px,-8px)}53%{transform:translate(-45px,2px)}78%{transform:translateX(-12px)}}",
+ "@keyframes tsfx-enemy-flurry{0%,100%{transform:translateX(0)}19%{transform:translate(-12px,-6px)}36%{transform:translate(-31px,2px)}57%{transform:translate(-17px,-8px)}75%{transform:translate(-39px,0)}}",
+ "@keyframes tsfx-enemy-phase{0%,100%{opacity:1;transform:translate(0)}27%{opacity:.2;transform:translate(17px,-7px)}46%{opacity:.35;transform:translate(-36px,-12px)}73%{opacity:1;transform:translate(-10px)}}",,
  "@keyframes tsfx-brace{0%,100%{transform:scale(1)}35%{transform:translateY(8px) scale(.94,1.08)}61%{transform:translateY(-5px) scale(1.07,.94)}}",
  "@keyframes tsfx-flurry{0%,100%{transform:translateX(0)}19%{transform:translate(13px,-6px)}36%{transform:translate(33px,2px)}57%{transform:translate(17px,-8px)}75%{transform:translate(41px,0)}}",
  "@keyframes tsfx-weave{0%,100%{transform:translateX(0)}25%{transform:translate(-17px,-8px)}49%{transform:translate(14px,2px)}70%{transform:translate(-8px)}}",
@@ -67,7 +70,9 @@ function pose(actor,key){
  var el=document.querySelector("#"+(actor==="enemy"?"enemy-side":"player-side")+" .sprite-wrap");if(!el)return;
  var previous=motionTimers.get(el);if(previous)clearTimeout(previous);
  el.style.animation="none";void el.offsetWidth;
- el.style.animation="tsfx-"+(actor==="enemy"?ENEMY_MOTION[key]:MOTION[key])+" 700ms steps(8,end)";
+ var poseKind=actor==="enemy"?ENEMY_MOTION[key]:MOTION[key];
+ if(actor==="enemy"&&(poseKind==="lunge"||poseKind==="flurry"||poseKind==="phase"))poseKind="enemy-"+poseKind;
+ el.style.animation="tsfx-"+poseKind+" 700ms steps(8,end)";
  motionTimers.set(el,setTimeout(function(){el.style.animation="";motionTimers.delete(el)},725))
 }
 function drawCard(e,p,A,B){
