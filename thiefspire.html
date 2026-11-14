@@ -215,6 +215,25 @@ canvas.sprite{width:min(95%,112px);max-height:min(100%,155px);filter:drop-shadow
 .act-tab{flex:1;border:1px solid #6e837b;border-radius:7px;padding:8px 4px;background:#1f3138;color:#b8c9c3;font:900 11px system-ui,sans-serif;letter-spacing:.07em}
 .act-tab.active{border-color:#ffe2a8;background:#4f4c3a;color:#ffe9ab;box-shadow:0 0 10px #c99c6150}
 .act-map-heading{font:800 10px system-ui,sans-serif;letter-spacing:.13em;text-align:center;color:#d9c795;padding:5px}
+
+/* ART PASS III: illuminated frame, readable combat intent, embossed cards. */
+#arena{box-shadow:inset 0 0 0 2px #aa9066,inset 0 -15px 25px #0c1725}
+#backdrop{filter:saturate(.99) contrast(1.05)}
+#npc-line{background:linear-gradient(90deg,#142328ef,#1d2c31d8);border-left:3px solid #ffd693;text-shadow:0 1px 1px #000b;box-shadow:0 3px 5px #0006}
+#fighters .name{text-shadow:1px 2px #111c2e,0 0 12px #000e;color:#f7e4c4}
+#player-side canvas.sprite{filter:drop-shadow(0 5px 0 #090e1baa) drop-shadow(0 0 4px #6f9c8890)!important}
+#enemy-side canvas.sprite{filter:drop-shadow(0 5px 0 #090e1baa) drop-shadow(0 0 4px #c5a07e6c)!important}
+#enemy-side .intent{font-size:12px;letter-spacing:.01em}
+#enemy-side .intent-detail{background:#10212be6;letter-spacing:.05em}
+.healthbar{box-shadow:inset 0 0 0 1px #07141b,0 2px 0 #07151b}
+.healthbar>span{box-shadow:inset 0 3px 0 #ffd5b153}
+.card{overflow:hidden}
+.card:before{content:"";position:absolute;pointer-events:none;inset:4px;border:1px solid #e6d7b83b;border-radius:5px}
+.card:after{content:"";position:absolute;pointer-events:none;left:13px;right:13px;top:47px;height:1px;background:#dfceae45}
+.card .glyph{font-size:35px}
+.card .cost{z-index:2}
+.card .title{text-shadow:0 2px #111b2a}
+@media(max-height:680px){.card .glyph{font-size:26px}.card:after{top:34px}}
 </style>
 </head>
 <body>
@@ -859,7 +878,7 @@ function render(){
  id("battlelog").textContent=s.log;
  renderCards();renderModal();
  sprite(id("thief-sprite"),"thief");
- sprite(id("enemy-sprite"),e?(e.id==="castellan"?"knight":e.id):"guard");
+ sprite(id("enemy-sprite"),e?e.id:"guard");
  if(typeof drawBackdrop==="function")drawBackdrop(Date.now())
 }
 id("endturn").addEventListener("click",endTurn);
@@ -945,6 +964,15 @@ function drawBackdrop(t){
    R(x+2,y+2,27,1,"#7f948047")
   }
  }
+ // Stone variations: grout, cracked tiles, mineral flecks and creeping moss.
+ for(var cr=0;cr<8;cr++){
+  for(var cc=0;cc<10;cc++){
+   var tx=cc*34-(cr%2)*17,ty=8+cr*18,k=(cr*17+cc*23+zone*11)%13;
+   if(k===1||k===8){R(tx+11,ty+4,9,1,"#0e20277c");R(tx+16,ty+5,1,5,"#0c191f8c");R(tx+12,ty+9,5,1,"#97a7966b")}
+   if(k===4){R(tx+3,ty+12,7,2,zone<2?"#587763a0":"#8c8a87a0");R(tx+7,ty+10,3,2,"#526d587c")}
+   if(k===9){R(tx+23,ty+6,4,2,"#bac3b084");R(tx+19,ty+9,2,1,"#0d20244f")}
+  }
+ }
  // Distant stair / arched gateway behind the duel.
  R(124,38,72,123,"#111a26");
  R(116,65,88,96,"#16242d");
@@ -959,15 +987,39 @@ function drawBackdrop(t){
   R(wx-1,55,3,58,p[0]);R(wx-8,85,16,3,p[0]);
   R(wx-9,111,19,10,p[5]);R(wx-11,119,23,4,"#15212b")
  });
+ // Narrow stained-glass shards, framed with iron mullions.
+ [68,233].forEach(function(wx){
+  R(wx-6,61,4,18,"#8daeb47d");R(wx+3,68,3,15,zone>=2?"#d5bb8a9c":"#a0c5c0a3");
+  R(wx-6,94,4,8,zone===3?"#ffcc79aa":"#7ca1b6ae");
+  R(wx+2,98,4,7,"#d6b28d80");
+  R(wx-8,73,16,2,"#15232c");R(wx-8,106,16,2,"#15232c");
+  R(wx-1,56,2,54,"#121e2a");
+  R(wx-11,122,22,3,"#b4a5808a");
+ });
  // Giant stone uprights, banner and ironwork.
  [22,291].forEach(function(x){R(x-12,6,26,153,p[0]);R(x-9,10,19,142,p[2]);R(x-5,14,5,133,p[3]);R(x-15,18,32,9,p[5]);R(x-16,146,34,11,p[0])});
  R(110,6,101,12,p[0]);R(120,18,83,7,p[2]);
  R(106,0,7,37,p[0]);R(204,0,7,37,p[0]);
  // Banner panels on middle heights.
  if(zone>=1){R(93,26,14,47,zone===3?"#96565b":"#567066");R(93,69,14,4,p[5]);R(213,26,14,47,zone===3?"#96565b":"#567066");R(213,69,14,4,p[5])}
+ // Banners and insignia. Each act has an identifiable heraldic motif.
+ [91,214].forEach(function(x,i){
+  var banner=zone===3?"#9c5257":zone===2?"#425c84":zone===1?"#55765c":"#54676d";
+  R(x-1,26,18,46,"#172730");R(x+1,25,14,41,banner);
+  R(x+1,26,14,3,"#dec6a1");R(x+1,64,14,3,"#b9a076");
+  R(x+3,29,2,27,"#e6d7ad36");R(x+12,30,2,29,"#111d2c67");
+  // Three-pixel rune crest.
+  R(x+7,38,3,15,"#e8cd91");R(x+3,41,11,3,"#e8cd91");
+  R(x+5,35,7,3,"#e8cd91");
+  R(x+7,54,3,3,"#172632");
+  if(i===1)R(x+5,59,6,2,"#181f2c88")
+ });
  // Torches, flames and flickering glints.
  [40,282].forEach(function(x,j){
   var flame=Math.sin((t||0)/140+j*2)*3,fy=53+flame;
+  // Warm light pools, cast as stepped pixel bands.
+  R(x-22,64,45,47,"#d9a75e17");R(x-16,63,33,41,"#e7ad6430");
+  R(x-10,65,21,34,"#edb56823");
   R(x-6,80,13,5,"#111b23");R(x-2,66,5,14,"#9a8459");R(x-4,70,9,5,"#d4b975");
   R(x-6,fy,13,15,"#b85f42");R(x-3,fy-7,7,17,"#e9a65d");R(x-1,fy-11,3,17,"#ffe8a4");
   R(x-11,88,23,2,"#ffd27d25");
@@ -977,6 +1029,35 @@ function drawBackdrop(t){
  for(var k=0;k<6;k++){var yy=168+k*11;R(0,yy,320,2,"#75897a54")}
  for(var l=-6;l<14;l++){L(160,158,l*44,220,"#455a57a0",1)}
  R(0,210,320,10,"#0b1922");
+ // Roughly tiled floor, irregular stones and short directional shadows.
+ for(var py=168;py<213;py+=14){
+  for(var px=0;px<319;px+=28){
+   var ix=px+(py%28?14:0),noise=(px*3+py*5+zone*19)%11;
+   R(ix+2,py+2,24,10,noise<4?"#374c4878":"#43514c54");
+   R(ix+3,py+2,18,1,"#a6b5a63f");
+   if(noise===0){R(ix+16,py+6,6,1,"#101d2678");R(ix+19,py+7,1,3,"#101d2678")}
+  }
+ }
+ // Environmental storytelling and room accents.
+ if(zone===0){
+  // Moss in the Keep and a cracked drainage channel.
+  for(var m=0;m<6;m++){R(11+m*17,140+(m%3)*5,10,3,"#5b80686b");R(280-m*9,150+(m%2)*3,7,2,"#6a87687a")}
+ }else if(zone===1){
+  // Hanging iron chains in the Inner Keep.
+  for(var ch=0;ch<4;ch++){R(108+ch*3,31+ch*7,2,6,"#8e9f9f9a");R(207-ch*3,38+ch*6,2,5,"#8e9f9f7f")}
+ }else if(zone===2){
+  // Ghostly blue lanterns for the Iron Heights.
+  R(112,89,6,11,"#a7d7dc");R(114,87,2,12,"#e0f8dd");R(203,89,6,11,"#a7d7dc");
+  R(116,100,8,2,"#87a8c2");
+ }else{
+  // The Golden Vault glitters with inset coins and crystal clusters.
+  for(var gem=0;gem<7;gem++){
+   var gx=18+gem*43;
+   R(gx,141+(gem%3)*4,4,8,"#b88b50");R(gx+2,138+(gem%3)*4,3,9,"#f0c676");
+   R(gx+3,147+(gem%3)*4,4,3,"#f1de9f")
+  }
+  R(135,106,50,4,"#bc9556");R(145,114,30,3,"#efd28a");
+ }
  // Interactive room dressing.
  if(mode==="merchant"){
   R(200,115,91,43,"#473b39");R(192,111,106,12,"#8a5a56");R(195,119,100,4,"#d2a57a");
@@ -996,6 +1077,11 @@ function drawBackdrop(t){
   R(218,123,88,30,"#a18a5e");R(224,130,76,18,"#4d3c3e");
   R(256,137,14,11,"#e2bd76");
  }
+ // Short foreground silhouettes add depth without hiding the characters.
+ [4,307].forEach(function(x){
+  R(x,158,9,48,"#101e26b5");R(x-2,159,13,5,"#34443e92");
+  R(x+2,163,3,28,"#67796c56");
+ });
  // Dust / ember motes loop gracefully.
  for(var z=0;z<13;z++){
   var dx=(z*83+33)%310,dy=((z*37+(t||0)*(0.008+z%3*.004))%145);
@@ -1028,9 +1114,9 @@ function sprite(canvas,type){
   R(22,20,22,13,edge);P([[22,24],[27,19],[40,21],[43,27],[36,34],[27,30]],"#0d1727");
   R(29,25,4,2,trim);R(39,25,3,2,trim);
   R(18,28,7,3,light);R(40,31,7,2,trim);R(27,35,15,3,"#62445d");
- }else if(type==="guard"||type==="knight"||type==="warden"){
-  var boss=type==="warden",kn=type==="knight"||boss;
-  var edge2="#212735",iron=kn?"#728da2":"#8c948f",shine=kn?"#acc5c6":"#c0bfac",dark="#465766",accent=boss?"#dcb768":kn?"#5b8f96":"#ba6658";
+ }else if(type==="guard"||type==="knight"||type==="castellan"||type==="warden"){
+  var boss=type==="warden",castellan=type==="castellan",kn=type==="knight"||castellan||boss;
+  var edge2="#212735",iron=castellan?"#71848d":kn?"#728da2":"#8c948f",shine=castellan?"#d2cba7":kn?"#acc5c6":"#c0bfac",dark="#465766",accent=boss?"#dcb768":castellan?"#8f5668":kn?"#5b8f96":"#ba6658";
   R(19,46,11,11,edge2);R(37,46,11,11,edge2);R(20,48,9,8,dark);R(38,48,9,8,dark);
   P([[20,29],[45,29],[49,49],[35,53],[17,49]],edge2);
   P([[22,31],[44,31],[45,46],[35,48],[20,46]],accent);
@@ -1045,6 +1131,13 @@ function sprite(canvas,type){
   if(kn){R(24,12,20,5,edge2);R(28,10,13,5,shine);R(34,6,5,7,accent)}
   else{R(30,9,7,9,"#943c45");R(27,11,12,3,"#b55b54")}
   if(boss){P([[21,19],[14,6],[23,13]],"#dec17c");P([[45,19],[54,6],[44,13]],"#dec17c");R(28,16,12,3,"#e8d992")}
+  if(castellan){
+   R(30,7,8,8,"#f0cd87");R(33,3,3,7,"#b75e6d");
+   R(19,29,6,3,"#e1c18c");R(44,29,5,3,"#e1c18c");
+   R(25,38,16,2,"#e0c18d");R(29,40,8,4,"#bb9e6d");
+   R(48,38,5,4,"#d9b479");R(49,41,3,6,"#b96573");
+   R(10,23,3,22,"#f3d7a7");R(7,22,7,4,"#efe5c3");
+  }
   // shield
   P([[45,34],[57,36],[55,49],[49,55],[43,48]],edge2);
   P([[47,37],[54,38],[53,47],[49,51],[46,47]],kn?"#6a9ba0":"#ab665a");
@@ -1144,6 +1237,28 @@ function sprite(canvas,type){
   R(29,32,14,3,shadow);
   R(55,12,3,42,"#e9e8d4");R(52,12,9,7,"#f7f0d5");R(50,42,12,3,"#ae9976")
 
+ }
+ // Unified sprite highlights: a controlled cool shadow / warm highlight palette.
+ if(type==="thief"){
+  R(20,18,5,2,"#a3b4a0");R(26,12,8,2,"#8fa59b");
+  R(19,45,8,2,"#5c7b73");R(24,47,2,4,"#294351");
+  R(38,13,5,2,"#91a99b");R(26,37,2,4,"#d2b780");
+  R(8,45,3,2,"#fff3c8")
+ }else if(["guard","knight","castellan","warden"].indexOf(type)>=0){
+  R(27,17,13,2,type==="warden"?"#ffe7a7":"#d6d9c6");
+  R(16,37,2,5,"#e1d6b8");R(46,36,2,5,"#f3d9ac");
+  R(29,41,5,2,"#f3dfa8")
+ }else if(type==="slime"){
+  R(21,40,5,2,"#a8d8a3");R(33,27,9,2,"#bdedb2");
+  R(46,45,2,3,"#305f60")
+ }else if(type==="skeleton"){
+  R(28,18,13,2,"#fff1cf");R(19,39,2,6,"#f0e6cb")
+ }else if(type==="mimic"){
+  R(21,19,14,2,"#f3d1a0");R(18,35,29,2,"#c99957")
+ }else if(type==="archer"||type==="mage"){
+  R(27,16,10,2,"#aec4b0");R(22,31,3,4,"#d6c09b")
+ }else if(type==="goblin"){
+  R(23,20,10,2,"#aed39d");R(17,37,4,2,"#c1ce95")
  }
  // shared glint for polished 8-bit feel
  R(52,13,2,2,"#d2d6b28c")
