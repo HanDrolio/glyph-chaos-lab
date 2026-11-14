@@ -396,6 +396,7 @@ canvas.sprite{width:min(95%,112px);max-height:min(100%,155px);filter:drop-shadow
   <div id="modal" role="dialog" aria-modal="true"><div class="modalbox" id="modalcontent"></div></div>
   <div id="toast" role="status"></div>
 </div>
+<script src="./thiefspire-fx.js"></script>
 <script>
 (function(){
 "use strict";
@@ -668,6 +669,7 @@ function playCard(index){
  case "shade":hurtEnemy(power(key,5));gainBlock(5);break;
  }
  attackFx("player",fx);
+ if(window.ThiefspireFX)window.ThiefspireFX.playCard(type);
  s.log="You play "+note+".";sound(c.type==="attack"?330:540);
  if(s.mode==="battle"&&s.enemy.hp<=0)winEncounter();
  render();save()
@@ -708,6 +710,7 @@ function endTurn(){
  if(e.bleed>0){var b=e.bleed;e.hp=Math.max(0,e.hp-b);e.bleed--;floatOn("enemy","🩸 -"+b,"red")}
  if(e.hp<=0){attackFx("player","magic");winEncounter();render();save();return}
  e.block=0;var m=getMove(),n=moveAmount(),msg="",kind=m[0],hurt=0;
+ if(window.ThiefspireFX)window.ThiefspireFX.playEnemy(e.id,kind);
  if(["attack","bleed","shoot","spell","multi"].indexOf(kind)>=0){
   if(e.weak>0)n=Math.ceil(n*.75);
   attackFx("enemy",kind==="bleed"?"stab":kind==="shoot"?"arrow":kind==="spell"?"magic":kind==="multi"?"double":"slash");
