@@ -188,6 +188,28 @@ canvas.sprite{width:min(95%,112px);max-height:min(100%,155px);filter:drop-shadow
 @keyframes relic-trigger{0%,100%{box-shadow:inset 0 -2px #121a20;transform:scale(1)}40%{box-shadow:0 0 12px 4px #f9db7b,0 0 28px #edd49b;transform:scale(1.24)}}
 #enemy-side.dead canvas.sprite{animation:fx-fall .6s steps(6,end) forwards!important}
 #player-side.dead canvas.sprite{animation:fx-fall .6s steps(6,end) forwards!important}
+
+/* 12-tier tower chart with three lanes and an accessible, scrollable minimap. */
+#top .lootline{gap:5px}
+#top .mini{padding:6px 7px}
+.route-board{margin:10px 0 7px;padding:7px;border:1px solid #a78e6c;border-radius:12px;background:linear-gradient(150deg,#111e2b,#16262b);max-height:265px;overflow-y:auto;overscroll-behavior:contain;scrollbar-color:#9e8f71 #16242c}
+.route-row{display:grid;grid-template-columns:23px repeat(3,minmax(0,1fr));column-gap:5px;align-items:center;position:relative;padding:3px;border-bottom:1px solid #7281772b}
+.route-row:last-child{border-bottom:0}
+.route-number{color:#d7bf8e;font:900 10px system-ui,sans-serif;letter-spacing:.02em;text-align:center}
+.route-node{position:relative;display:flex;align-items:center;gap:4px;min-width:0;min-height:32px;padding:4px 6px;border:1px solid #4d5e62;border-radius:6px;background:#22323a;color:#b8c8c4;white-space:nowrap;font:700 10px system-ui,sans-serif}
+.route-node>span{font-size:15px;line-height:1}
+.route-node small{font:700 9px system-ui,sans-serif;overflow:hidden;text-overflow:ellipsis}
+.route-node.locked-option{opacity:.56;background:#17232e}
+.route-node.old-option{opacity:.43}
+.route-node.missed-node{opacity:.23}
+.route-node.future-option{border-color:#e8d18f;background:#394739;color:#fff0b6;box-shadow:0 0 11px #d5b1744a}
+.route-node.selected-node{background:#2a5f53;border-color:#b7efc4;color:#e6ffed;opacity:1;box-shadow:0 0 8px #96bfa46a}
+.route-tick{position:absolute;right:2px;top:0;color:#b6f2ba;font:900 10px system-ui,sans-serif}
+.route-row.row-next{border-radius:7px;background:#72613c36}
+.route-row.row-current .route-number{color:#c1eece}
+.map-caption{text-align:center;margin:13px 0 5px;color:#e6cc9b;font:900 10px system-ui,sans-serif;letter-spacing:.12em}
+.map-legend{display:flex;justify-content:space-around;gap:5px;padding:3px 0 4px;color:#9db6ae;font:700 9px system-ui,sans-serif;flex-wrap:wrap}
+@media(max-width:375px){.route-node{padding:3px 4px;min-height:30px;gap:3px}.route-node small{font-size:8px}#top .mini{padding:5px 6px;font-size:10px}}
 </style>
 </head>
 <body>
@@ -195,7 +217,7 @@ canvas.sprite{width:min(95%,112px);max-height:min(100%,155px);filter:drop-shadow
   <header id="top">
     <div class="topline"><div><div class="brand">⚔ THIEFSPIRE <span style="color:#e8bfc2">II</span></div><div class="subtitle">THE RING REMEMBERS · THE GOLDEN VAULT</div></div><div style="text-align:right"><div class="floor" id="floor">FLOOR 01 / 12</div><div class="coins" id="gold">🪙 25 GOLD</div></div></div>
     <div id="runline"><span class="stat-pill">🗝️ MASTER LOOT <strong id="fragments">0/5</strong></span><span class="stat-pill">🎲 <strong id="stats">CUN 2 · GRT 1 · LOR 1</strong></span><span class="stat-pill">💍 <strong>CURSED</strong></span></div>
-    <div class="lootline"><div class="loottitle">Relics / Loot</div><div id="relics"><span class="empty-relic">Nothing stolen yet</span></div><button class="mini" id="bag" aria-label="Open inventory">BAG ☰</button><button class="mini" id="sound" aria-label="Toggle sound">♪</button></div>
+    <div class="lootline"><div class="loottitle">Relics / Loot</div><div id="relics"><span class="empty-relic">Nothing stolen yet</span></div><button class="mini" id="route" aria-label="View the twelve by three dungeon map">MAP 🗺️</button><button class="mini" id="bag" aria-label="Open inventory">BAG ☰</button><button class="mini" id="sound" aria-label="Toggle sound">♪</button></div>
   </header>
   <main id="arena"><canvas id="backdrop" width="320" height="220" aria-hidden="true"></canvas><div id="battlefx" aria-hidden="true"></div>
     <div class="arena-head"><span id="room">THE LOWER KEEP</span><span id="encounter-name">ENCOUNTER 01</span></div>
@@ -330,10 +352,10 @@ bell:{icon:"🔔",name:"THE BELLFLOOR HEIST",text:"Above the bell tower, the cas
 mirror:{icon:"🪞",name:"THE MIRROR KNIGHT",text:"A polished suit of armor reflects not your face, but a dozen thieves who came before. “Choose what you are willing to lose.”",opts:[["Offer a memory · Lore DC 13","lor",13],["Steal its silver eye · Cunning DC 13","cun",13],["Shatter the mirror · Grit DC 13","grt",13]]}
 };
 var RoomMenu={
-2:["battle","event","treasure"],3:["battle","merchant","event"],4:["camp","elite","event"],
-5:["battle","treasure","elite"],6:["battle","merchant","event"],7:["elite","event","battle"],
-8:["camp","merchant","treasure"],9:["battle","elite","event"],10:["battle","merchant","treasure"],
-11:["elite","event","camp"],12:["boss"]
+ 1:["battle","event","treasure"],2:["battle","event","treasure"],3:["battle","merchant","event"],
+ 4:["camp","elite","event"],5:["battle","treasure","elite"],6:["battle","merchant","event"],
+ 7:["elite","event","battle"],8:["camp","merchant","treasure"],9:["battle","elite","event"],
+ 10:["battle","merchant","treasure"],11:["elite","event","camp"],12:["boss","boss","boss"]
 };
 var RoomInfo={
 battle:["⚔️","Guarded Passage","Fight a patrol for loot and a new card."],
@@ -345,11 +367,29 @@ camp:["🔥","Safe Campfire","Heal, improve a card, or study lore."],
 boss:["👑","The Golden Warden","The final vault is guarded by the king's monster."]
 };
 
+var BossRoutes=[
+ {title:"The Front Gate",desc:"Meet the Golden Warden openly. Start with 8 Block.",icon:"🛡️"},
+ {title:"The Smugglers' Tunnel",desc:"Slip in unseen. The Warden starts with 5 Bleed.",icon:"🗝️"},
+ {title:"The Bell Tower",desc:"Strike from above. Gain +1 Energy on your first turn.",icon:"🔔"}
+];
+function buildTower(seed){
+ // The tower is generated once per run, then saved with the run.
+ var tower=[null];
+ for(var floor=1;floor<=12;floor++){
+  var base=RoomMenu[floor],shift=(seed+floor*11+Math.floor(seed/97)*floor)%3,row=[];
+  for(var lane=0;lane<3;lane++){
+   var kind=base[(lane+shift)%3],data=kind==="boss"?BossRoutes[lane]:null,info=RoomInfo[kind];
+   row.push({floor:floor,lane:lane,kind:kind,icon:data?data.icon:info[0],title:data?data.title:info[1],desc:data?data.desc:info[2]})
+  }
+  tower.push(row)
+ }
+ return tower
+}
 var s,modalState="",soundOn=false,audioCtx,toastTimer,animNonce=0;
 function id(x){return document.getElementById(x)}
 function rand(n){return Math.floor(Math.random()*n)}
 function shuffle(a){for(var i=a.length-1;i>0;i--){var j=rand(i+1),v=a[i];a[i]=a[j];a[j]=v}return a}
-function initial(){return {version:2,balancePatch:1,floor:1,hp:76,maxHp:76,block:0,weak:0,bleed:0,energy:3,gold:25,relics:[],deck:["strike","strike","strike","strike","strike","guard","guard","guard","guard","quick","feint"],draw:[],discard:[],hand:[],turn:1,enemy:null,mode:"origin",log:"The Ring remembers. Choose how to steal the Vault.",rewardChoices:[],lootText:"",wins:0,origin:"",stats:{cun:2,grt:1,lor:1},fragments:0,fragmentFloors:[],roomChoices:[],roomId:"",nextKind:"battle",elite:false,potions:3,ringUsed:false,ringRoomUsed:false,stolenThisFight:false,firstAttack:false,maskReady:false,shopStock:null,roomResolved:false,history:[],dialogue:"A cold ring tightens around your finger."}}
+function initial(){var seed=rand(1000000);return {version:3,branchPatch:1,towerSeed:seed,tower:buildTower(seed),routeHistory:[],bossLane:null,balancePatch:1,floor:0,hp:76,maxHp:76,block:0,weak:0,bleed:0,energy:3,gold:25,relics:[],deck:["strike","strike","strike","strike","strike","guard","guard","guard","guard","quick","feint"],draw:[],discard:[],hand:[],turn:1,enemy:null,mode:"origin",log:"The Ring remembers. Choose how to steal the Vault.",rewardChoices:[],lootText:"",wins:0,origin:"",stats:{cun:2,grt:1,lor:1},fragments:0,fragmentFloors:[],roomChoices:[],roomId:"",nextKind:"battle",elite:false,potions:3,ringUsed:false,ringRoomUsed:false,stolenThisFight:false,firstAttack:false,maskReady:false,shopStock:null,roomResolved:false,history:[],dialogue:"A cold ring tightens around your finger."}}
 
 function save(){try{localStorage.setItem(KEY,JSON.stringify(s))}catch(e){}}
 function has(id){return s.relics.indexOf(id)>=0}
@@ -387,6 +427,11 @@ function startFloor(){
  s.draw=shuffle(s.deck.slice());s.discard=[];s.hand=[];drawCards(5+(has("watch")?1:0));
  var lines=Dialogues[proto.id]||["Steel answers steel."];s.dialogue=proto.id==="warden"?"The Golden Warden, called the Vault King in older tales, lifts a blade. “Every thief believes they are the first.”":lines[rand(lines.length)];
  s.log=(s.elite?"An elite champion guards the stair: ":"A hostile figure appears: ")+proto.name+".";
+ if(s.floor===12){
+  if(s.bossLane===0){s.block+=8;s.log="You storm the Front Gate with 8 extra Block. The Warden advances."}
+  else if(s.bossLane===1){s.enemy.bleed+=5;s.log="The Smugglers' Tunnel lets you wound the Warden before the fight. 5 Bleed."}
+  else if(s.bossLane===2){s.energy+=1;s.log="The Bell Tower gives you the high ground. +1 opening Energy."}
+ }
  render();save()
 }
 function getMove(){var e=s.enemy;if(!e)return ["attack",0];var proto=Enemies.filter(function(x){return x.id===e.id})[0];return proto.moves[e.midx%proto.moves.length]}
@@ -526,15 +571,25 @@ function collectFragment(){
  return ""
 }
 function enterMap(){
- var newFragment=collectFragment();s.mode="map";s.enemy=null;
- s.roomChoices=(RoomMenu[s.floor+1]||["boss"]).slice();
- s.dialogue="The ring weighs on your finger. Three paths wind higher."+newFragment;
+ var newFragment=collectFragment();
+ if(!Array.isArray(s.tower)||s.tower.length!==13)s.tower=buildTower(s.towerSeed||1);
+ s.mode="map";s.enemy=null;
+ var next=s.tower[s.floor+1];
+ s.roomChoices=next?next.map(function(room){return room.kind}):[];
+ s.dialogue="The Spire splits into three routes. Choose the next chamber."+newFragment;
  render();save()
 }
-function nextFloor(kind){
+function nextFloor(lane){
  if(s.mode!=="map")return;
- if(s.roomChoices.indexOf(kind)<0)return;
- s.nextKind=kind;s.floor++;startFloor()
+ lane=Number(lane);
+ var next=s.floor+1,rooms=s.tower&&s.tower[next];
+ if(!Number.isInteger(lane)||lane<0||lane>2||!rooms||!rooms[lane])return;
+ var room=rooms[lane];
+ s.routeHistory=s.routeHistory||[];
+ if(s.routeHistory.some(function(x){return x.floor===next}))return;
+ s.routeHistory.push({floor:next,lane:lane,kind:room.kind,title:room.title});
+ s.nextKind=room.kind;s.bossLane=next===12?lane:null;s.floor=next;
+ startFloor()
 }
 function chooseReward(key){
  if(s.mode!=="reward")return;
@@ -630,7 +685,7 @@ function beginOrigin(kind){
  else if(kind==="charlatan"){s.stats={cun:2,grt:1,lor:3};s.deck.push("flash")}
  else return;
  s.log="You chose the "+kind+". The Thief's Ring is yours, but you are not its master.";
- startFloor()
+ enterMap()
 }
 function reset(){modalState="";s=initial();render();save()}
 
@@ -641,6 +696,26 @@ function renderCards(){var box=id("hand");box.innerHTML="";if(s.mode!=="battle")
 
 function choice(icon,title,desc,action,disabled){
  return '<button class="choice" data-action="'+action+'"'+(disabled?' disabled aria-disabled="true"':'')+'><span class="icon">'+icon+'</span><span><strong>'+title+'</strong><small>'+desc+'</small></span></button>'
+}
+function renderRouteBoard(inspection){
+ var out='<div class="route-board" role="group" aria-label="Twelve dungeon tiers, three chamber lanes each">';
+ var done=s.routeHistory||[],next=s.floor+1;
+ for(var floor=1;floor<=12;floor++){
+  var current=floor===next&&s.mode==="map";
+  var past=done.filter(function(r){return r.floor===floor})[0];
+  out+='<div class="route-row'+(current?' row-next':'')+(floor===s.floor?' row-current':'')+'">';
+  out+='<span class="route-number" aria-label="Floor '+floor+'">'+String(floor).padStart(2,"0")+'</span>';
+  (s.tower[floor]||[]).forEach(function(room){
+   var chosen=past&&past.lane===room.lane,missed=past&&!chosen;
+   var kindClass=current?' future-option':floor<next?' old-option':' locked-option';
+   var label=room.title+' · Floor '+floor+(chosen?' · VISITED':current?' · AVAILABLE':'');
+   out+='<div class="route-node'+kindClass+(chosen?' selected-node':'')+(missed?' missed-node':'')+'" title="'+label.replace(/"/g,"&quot;")+'" aria-label="'+label.replace(/"/g,"&quot;")+'">'+
+      '<span>'+room.icon+'</span><small>'+room.title+'</small>'+(chosen?'<b class="route-tick">✓</b>':'')+'</div>'
+  });
+  out+='</div>'
+ }
+ out+='</div><div class="map-legend"><span>🟨 Next choices</span><span>✓ Route taken</span><span>🔒 Future floors</span></div>';
+ return out
 }
 function renderModal(){
  var box=id("modalcontent"),show=s.mode!=="battle"||modalState!=="";
@@ -654,6 +729,9 @@ function renderModal(){
   h+='<hr><strong>DECK · '+s.deck.length+' CARDS</strong><br>'+s.deck.map(function(key){var c=Card[cardKey(key)];return c?c.icon+" "+c.name+(up(key)?" ★":""):"Unknown"}).join(" · ");
   h+='<hr><strong>JOURNAL</strong><br>'+(s.history.length?s.history.map(function(x){return "Floor "+x.floor+": "+x.outcome}).join("<br>"):"The ink is still dry.")+'</div>';
   h+='<button class="action secondary" data-action="close">BACK TO GAME</button><button class="action secondary" data-action="new">START A NEW RUN</button>';
+ }else if(modalState==="route"){
+  h='<div class="modaleyebrow">THE GOLDEN VAULT · DUNGEON MAP</div><h2>12 × 3 Dungeon</h2><p>Three chambers per tier. Your glowing trail marks the rooms you entered. The next tier is outlined in gold.</p>'+renderRouteBoard(true);
+  h+='<button class="action secondary" data-action="close">RETURN TO GAME</button>';
  }else if(s.mode==="origin"){
   h='<div class="modaleyebrow">THE RING REMEMBERS</div><h2>Choose Your Rogue</h2><p>“In the Slums, they called Master Loot a myth. Then you stole the ring.” Choose your background and starting card.</p><div class="choices">';
   h+=choice("🗡️","THE CUTPURSE","Cunning 3 · Grit 1 · Lore 1 · Start with Pickpocket","origin:cutpurse");
@@ -661,9 +739,9 @@ function renderModal(){
   h+=choice("🎭","THE CHARLATAN","Cunning 2 · Grit 1 · Lore 3 · Start with Flash Powder","origin:charlatan");
   h+='</div>';
  }else if(s.mode==="map"){
-  h='<div class="modaleyebrow">CHOOSE YOUR ROUTE · FLOOR '+(s.floor+1)+'/12</div><h2>Three Paths Above</h2><p>'+s.log+'<br><br>“Every door is a gamble. Every gamble is a story.”</p><div class="choices">';
-  (s.roomChoices||[]).forEach(function(key){var info=RoomInfo[key];if(info)h+=choice(info[0],info[1],info[2],"room:"+key)});
-  h+='</div><p style="font-size:11px">Each room may be cleared once.</p>';
+  h='<div class="modaleyebrow">THE SPIRE · TIER '+(s.floor+1)+' OF 12</div><h2>Pick Your Path</h2><p>'+s.log+'<br>One room per tier. Three ways forward.</p><div class="choices">';
+  (s.tower[s.floor+1]||[]).forEach(function(room){h+=choice(room.icon,room.title,room.desc,"room:"+room.lane)});
+  h+='</div><div class="map-caption">🗺️ THE TOWER · 12 TIERS × 3 ROOMS</div>'+renderRouteBoard(false);
  }else if(s.mode==="reward"){
   h='<div class="modaleyebrow">VICTORY · FLOOR '+s.floor+'</div><h2>Claim Your Spoils</h2><p>'+s.lootText+'<br>Add one card to your deck.</p><div class="choices">';
   (s.rewardChoices||[]).forEach(function(key){var c=Card[key];if(c)h+=choice(c.icon,c.name,c.cost+" ENERGY · "+c.desc,"reward:"+key)});
@@ -710,7 +788,7 @@ function render(){
  id("stats").textContent="CUN "+s.stats.cun+" · GRT "+s.stats.grt+" · LOR "+s.stats.lor;
  id("relics").innerHTML=s.relics.length?s.relics.map(function(r){return '<span class="relic" data-relic="'+r+'" title="'+Relic[r].name+'">'+Relic[r].icon+"</span>"}).join(""):'<span class="empty-relic">Nothing stolen yet</span>';
  id("room").textContent=s.floor>=12?"THE GOLDEN VAULT":s.floor>=9?"THE IRON HEIGHTS":s.floor>=5?"THE INNER KEEP":"THE LOWER KEEP";
- id("encounter-name").textContent=s.mode==="origin"?"THE SLUMS":s.mode==="camp"?"REST CHAMBER":s.mode==="won"?"VAULT OPEN":"FLOOR "+String(s.floor).padStart(2,"0");
+ id("encounter-name").textContent=s.mode==="origin"?"THE SLUMS":s.mode==="map"?"THREE PATHS AHEAD":s.mode==="camp"?"REST CHAMBER":s.mode==="won"?"VAULT OPEN":"FLOOR "+String(s.floor).padStart(2,"0")+" · LANE "+(s.routeHistory&&s.routeHistory.length?s.routeHistory[s.routeHistory.length-1].lane+1:"?");
  id("npc-line").textContent=s.dialogue||"The ring grows colder.";
  id("player-hp").textContent=s.hp+" / "+s.maxHp+" HP";
  id("player-fill").style.width=(100*s.hp/s.maxHp)+"%";
@@ -742,6 +820,7 @@ id("endturn").addEventListener("click",endTurn);
 id("ringbutton").addEventListener("click",useRing);
 id("potion").addEventListener("click",drinkPotion);
 id("bag").addEventListener("click",function(){modalState="bag";renderModal()});
+id("route").addEventListener("click",function(){modalState="route";renderModal()});
 id("sound").addEventListener("click",function(){soundOn=!soundOn;id("sound").textContent=soundOn?"♫":"♪";sound(520)});
 id("modal").addEventListener("click",function(ev){
  var btn=ev.target.closest("[data-action]");if(!btn||btn.disabled)return;
@@ -1024,7 +1103,13 @@ function sprite(canvas,type){
 try{
  var loaded=JSON.parse(localStorage.getItem(KEY)||"null");
  if(loaded&&loaded.deck&&typeof loaded.hp==="number"){
-  s=Object.assign(initial(),loaded);s.version=2;
+  s=Object.assign(initial(),loaded);s.version=3;
+  if(!loaded.branchPatch||!Array.isArray(s.tower)||s.tower.length!==13){
+   var freshSeed=s.towerSeed||rand(1000000);
+   s.towerSeed=freshSeed;s.tower=buildTower(freshSeed);s.routeHistory=s.routeHistory||[];
+   s.branchPatch=1;s.roomChoices=(s.tower[s.floor+1]||[]).map(function(r){return r.kind});
+   save()
+  }
   s.stats=s.stats||{cun:2,grt:1,lor:1};
   s.fragmentFloors=s.fragmentFloors||[];s.fragments=s.fragments||0;
   s.potions=typeof s.potions==="number"?s.potions:2;
@@ -1048,7 +1133,7 @@ try{
   }
   if(s.mode==="origin"&&loaded.version===1)s.mode="battle";
   if(s.mode==="battle"&&!s.enemy)startFloor();
-  else if(s.mode==="map"&&!s.roomChoices.length)s.roomChoices=(RoomMenu[s.floor+1]||["boss"]).slice();
+  else if(s.mode==="map")s.roomChoices=(s.tower[s.floor+1]||[]).map(function(r){return r.kind});
   render();
  }else reset()
 }catch(e){s=initial();render();save()}
