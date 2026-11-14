@@ -244,11 +244,87 @@ var Enemies=[
 {id:"ogre",name:"DUNGEON OGRE",hp:55,moves:[["attack",14],["defend",9],["attack",12]]},
 {id:"warden",name:"GOLDEN WARDEN",hp:112,moves:[["attack",13],["defend",14],["bleed",11],["buff",4],["attack",17]]}
 ];
+
+/* Recovered earlier runs: the Thief's Ring, five Master Loot fragments,
+   three rogue backgrounds, dice choices, Shadow Captain and Vault King. */
+Object.assign(Card,{
+pickpocket:{name:"Pickpocket",icon:"🪙",cost:0,type:"attack",desc:"Deal 4. Steal 3 gold once per foe."},
+evade:{name:"Evasion Roll",icon:"🌀",cost:1,type:"skill",desc:"Gain 8 Block. Draw 1."},
+flash:{name:"Flash Powder",icon:"✨",cost:1,type:"skill",desc:"Weak 2, Exposed 1."},
+ambush:{name:"Ambush",icon:"🥷",cost:2,type:"attack",desc:"Deal 11. +9 on turn one."},
+sap:{name:"Sap",icon:"🔨",cost:1,type:"attack",desc:"Deal 6. Apply Weak 1."},
+hook:{name:"Grapple Hook",icon:"🪝",cost:1,type:"attack",desc:"Deal 9. Ignore Block."},
+adrenaline:{name:"Adrenaline",icon:"💉",cost:0,type:"skill",desc:"Gain 1 Energy. Draw 1."},
+shade:{name:"Cloak & Dagger",icon:"🦇",cost:1,type:"attack",desc:"Deal 5. Gain 5 Block."}
+});
+Object.assign(Relic,{
+dice:{icon:"🎲",name:"Loaded Dice",desc:"+2 Cunning on story checks."},
+lockpick:{icon:"🗝️",name:"Silver Lockpick",desc:"+2 Cunning on story checks."},
+mask:{icon:"🎭",name:"Faceless Mask",desc:"The first enemy hit each fight deals 3 less damage."},
+chapel:{icon:"⛪",name:"Chapel Coin",desc:"+2 Lore on story checks."},
+candle:{icon:"🕯️",name:"Black Candle",desc:"Enemies start battles with 2 Bleed."},
+spider:{icon:"🕷️",name:"Spider Brooch",desc:"+2 Grit on story checks."},
+blade:{icon:"⚔️",name:"Runic Dagger",desc:"Your first attack each battle deals +3 damage."}
+});
+Enemies.push(
+{id:"archer",name:"TOWER ARCHER",hp:30,moves:[["shoot",7],["shoot",9],["defend",5]]},
+{id:"jailer",name:"IRON JAILER",hp:46,moves:[["attack",9],["bleed",6],["defend",9]]},
+{id:"mimic",name:"HUNGRY MIMIC",hp:42,moves:[["defend",8],["multi",5],["attack",12]]},
+{id:"skeleton",name:"BONE DUELIST",hp:37,moves:[["multi",5],["defend",7],["attack",11]]},
+{id:"monk",name:"PLAGUE MONK",hp:40,moves:[["spell",8],["bleed",7],["buff",3]]},
+{id:"mage",name:"CANDLE MAGE",hp:42,moves:[["spell",11],["defend",6],["spell",13]]},
+{id:"captain",name:"SHADOW CAPTAIN",hp:83,moves:[["attack",13],["defend",13],["multi",7],["spell",11],["buff",4]]}
+);
+var Dialogues={
+guard:["“State your business, shadow.”","“Draw steel. The king pays for corpses.”"],
+knight:["“My oath outlives your tricks.”","“No thief shall pass the iron gate.”"],
+warden:["“Five fragments. One foolish thief.”","“Every thief believes they are the first.”"],
+captain:["“I taught your shadow how to fight.”","“The bell tolls for thieves.”"],
+archer:["“You won't reach the stairs.”","“Stop moving. I hate missing.”"],
+jailer:["“Keys stay on my belt.”","“Prisoners leave in chains.”"],
+mimic:["The treasure chest opens its teeth.","“You thought I was furniture.”"],
+skeleton:["Bones rattle in a duelist's salute.","“En garde,” whispers an empty skull."],
+monk:["“Every wound is an offering.”","“May the rot have mercy.”"],
+mage:["“My candles remember your face.”","“The flame knows your name.”"],
+goblin:["“Your pockets are mine!”","“I saw you first, tall one.”"],
+slime:["The slime bubbles in an almost friendly way."],
+cultist:["“The ash remembers.”"],
+rat:["The rat bares teeth the size of tiny knives."],
+wraith:["“Leave your breath at the door.”"],
+imp:["“Hot enough for you?”"],
+ogre:["“SMASH THE LITTLE ONE!”"]
+};
+var Events={
+dice:{icon:"🎲",name:"THE DICE GOBLIN",text:"A goblin in a velvet vest offers a game of bone dice. “The house wins, unless you're better at cheating.”",opts:[["Roll fairly · Cunning DC 12","cun",12],["Read the loaded bones · Lore DC 11","lor",11],["Walk away","leave",0]]},
+reliquary:{icon:"🗝️",name:"THE LOCKED RELIQUARY",text:"An iron chest sleeps beneath an inscription: EVERYTHING HAS A PRICE. The lock is older than the castle.",opts:[["Pick the lock · Cunning DC 12","cun",12],["Break the hinges · Grit DC 13","grt",13],["Use the Thief's Ring","ring",0]]},
+prisoner:{icon:"🧍",name:"THE SUSPICIOUS PRISONER",text:"A prisoner whispers from a barred cell. “The Warden hoards five fragments. Get me out and I'll tell you where one went.”",opts:[["Free the prisoner · Lore DC 12","lor",12],["Question them · Cunning DC 11","cun",11],["Walk away","leave",0]]},
+chapel:{icon:"⛪",name:"CHAPEL OF ASH",text:"Black candles gutter around an empty altar. A voice offers a blessing in exchange for a scar.",opts:[["Pray for a blessing · Lore DC 12","lor",12],["Sacrifice 7 HP for a relic","sacrifice",0],["Decline the bargain","leave",0]]},
+tome:{icon:"📖",name:"THE WHISPERING TOME",text:"A book binds itself to your shadow. Every page is blank until you blink.",opts:[["Study the spell · Lore DC 12","lor",12],["Tear out a useful page · Grit DC 12","grt",12],["Sell the book to a collector","sell",0]]},
+bell:{icon:"🔔",name:"THE BELLFLOOR HEIST",text:"Above the bell tower, the castle guards are changing shifts. One hallway is lit, one is dark, and one smells of smoke.",opts:[["Slip through shadow · Cunning DC 13","cun",13],["Talk your way past · Lore DC 12","lor",12],["Charge through · Grit DC 12","grt",12]]},
+mirror:{icon:"🪞",name:"THE MIRROR KNIGHT",text:"A polished suit of armor reflects not your face, but a dozen thieves who came before. “Choose what you are willing to lose.”",opts:[["Offer a memory · Lore DC 13","lor",13],["Steal its silver eye · Cunning DC 13","cun",13],["Shatter the mirror · Grit DC 13","grt",13]]}
+};
+var RoomMenu={
+2:["battle","event","treasure"],3:["battle","merchant","event"],4:["camp","elite","event"],
+5:["battle","treasure","elite"],6:["battle","merchant","event"],7:["elite","event","battle"],
+8:["camp","merchant","treasure"],9:["battle","elite","event"],10:["battle","merchant","treasure"],
+11:["elite","event","camp"],12:["boss"]
+};
+var RoomInfo={
+battle:["⚔️","Guarded Passage","Fight a patrol for loot and a new card."],
+elite:["💀","Elite Challenge","A dangerous champion, richer spoils."],
+event:["🎲","Strange Encounter","A D&D-style story choice with a d20 check."],
+treasure:["🎁","Locked Treasury","One chest, one decision, no second takes."],
+merchant:["🛍️","Black Market","Buy a card, relic, or healing potion."],
+camp:["🔥","Safe Campfire","Heal, improve a card, or study lore."],
+boss:["👑","The Golden Warden","The final vault is guarded by the king's monster."]
+};
+
 var s,modalState="",soundOn=false,audioCtx,toastTimer,animNonce=0;
 function id(x){return document.getElementById(x)}
 function rand(n){return Math.floor(Math.random()*n)}
 function shuffle(a){for(var i=a.length-1;i>0;i--){var j=rand(i+1),v=a[i];a[i]=a[j];a[j]=v}return a}
-function initial(){return {version:1,floor:1,hp:68,maxHp:68,block:0,weak:0,bleed:0,energy:3,gold:25,relics:[],deck:["strike","strike","strike","strike","strike","guard","guard","guard","guard","quick","feint"],draw:[],discard:[],hand:[],turn:1,enemy:null,mode:"battle",log:"A locked vault awaits above.",rewardChoices:[],lootText:"",wins:0}}
+function initial(){return {version:2,floor:1,hp:68,maxHp:68,block:0,weak:0,bleed:0,energy:3,gold:25,relics:[],deck:["strike","strike","strike","strike","strike","guard","guard","guard","guard","quick","feint"],draw:[],discard:[],hand:[],turn:1,enemy:null,mode:"origin",log:"The Ring remembers. Choose how to steal the Vault.",rewardChoices:[],lootText:"",wins:0,origin:"",stats:{cun:2,grt:1,lor:1},fragments:0,fragmentFloors:[],roomChoices:[],roomId:"",nextKind:"battle",elite:false,potions:2,ringUsed:false,ringRoomUsed:false,stolenThisFight:false,firstAttack:false,maskReady:false,shopStock:null,roomResolved:false,history:[],dialogue:"A cold ring tightens around your finger."}}
+
 function save(){try{localStorage.setItem(KEY,JSON.stringify(s))}catch(e){}}
 function has(id){return s.relics.indexOf(id)>=0}
 function cardKey(key){return key.replace("+","")}
@@ -256,19 +332,51 @@ function up(key){return key.indexOf("+")>=0}
 function power(key,v){return v+(up(key)?3:0)}
 function hpAdd(n){s.hp=Math.min(s.maxHp,s.hp+Math.max(0,n))}
 function drawCards(n){for(var i=0;i<n;i++){if(!s.draw.length){if(!s.discard.length)break;s.draw=shuffle(s.discard.splice(0))}s.hand.push(s.draw.pop())}}
-function pickEnemy(){if(s.floor===12)return Enemies[9];var pool=s.floor<4?Enemies.slice(0,4):s.floor<8?Enemies.slice(1,7):Enemies.slice(3,9);return pool[rand(pool.length)]}
+
+function pickEnemy(){
+ if(s.floor===12)return Enemies.filter(function(x){return x.id==="warden"})[0];
+ if(s.elite&&s.floor===7)return Enemies.filter(function(x){return x.id==="captain"})[0];
+ var pool;
+ if(s.elite)pool=Enemies.filter(function(x){return ["knight","ogre","jailer","mimic","captain"].indexOf(x.id)>=0});
+ else if(s.floor<4)pool=Enemies.filter(function(x){return ["guard","goblin","slime","cultist","rat","archer"].indexOf(x.id)>=0});
+ else if(s.floor<8)pool=Enemies.filter(function(x){return ["guard","archer","knight","jailer","skeleton","mimic","rat","cultist"].indexOf(x.id)>=0});
+ else pool=Enemies.filter(function(x){return ["knight","wraith","imp","ogre","jailer","mimic","monk","mage","skeleton","archer"].indexOf(x.id)>=0});
+ return pool[rand(pool.length)]
+}
 function startFloor(){
- if(s.floor===4||s.floor===8){s.mode="camp";s.log="A quiet corner in the tower.";render();save();return}
- var proto=pickEnemy(),scale=Math.max(0,s.floor-1);
- s.enemy={id:proto.id,name:proto.name,hp:proto.hp+scale*3,maxHp:proto.hp+scale*3,block:0,bleed:0,weak:0,exposed:0,midx:0,buff:0};
+ modalState="";
+ var kind=s.floor===12?"boss":(s.nextKind||"battle");
+ s.roomId=kind;s.nextKind=null;s.roomResolved=false;s.enemy=null;s.elite=kind==="elite";
+ s.ringUsed=false;s.ringRoomUsed=false;s.stolenThisFight=false;s.firstAttack=false;s.maskReady=has("mask");
+ if(kind==="camp"){s.mode="camp";s.dialogue="“Even thieves need a fire,” says a traveler who refuses to tell you their name.";s.log="A quiet rest chamber.";render();save();return}
+ if(kind==="merchant"){s.mode="merchant";var items=Object.keys(Card).filter(function(k){return k!=="strike"&&k!=="guard"}),rr=Object.keys(Relic).filter(function(k){return !has(k)});
+ s.shopStock={card:items[rand(items.length)],relic:rr.length?rr[rand(rr.length)]:null,cardBought:false,relicBought:false,potionBought:false};
+ s.dialogue="“Everything here is stolen. That means everything is authentic.”";s.log="A black-market vendor smiles too widely.";render();save();return}
+ if(kind==="treasure"){s.mode="treasure";s.dialogue="The iron chest has three locks, a fresh scratch, and no patience.";s.log="A locked coffer waits. One attempt only.";render();save();return}
+ if(kind==="event"){s.mode="event";var keys=Object.keys(Events);s.eventId=keys[rand(keys.length)];s.dialogue=Events[s.eventId].text;s.log=Events[s.eventId].name;render();save();return}
+ var proto=pickEnemy(),scale=Math.max(0,s.floor-1)+(s.elite?12:0);
+ s.enemy={id:proto.id,name:proto.name,hp:proto.hp+scale*3,maxHp:proto.hp+scale*3,block:0,bleed:has("candle")?2:0,weak:0,exposed:0,midx:0,buff:0};
  s.mode="battle";s.block=has("clasp")?3:0;s.weak=0;s.bleed=0;s.turn=1;s.energy=3+(has("lantern")?1:0);
  s.draw=shuffle(s.deck.slice());s.discard=[];s.hand=[];drawCards(5+(has("watch")?1:0));
- s.log="A "+proto.name.toLowerCase()+" blocks your path.";
+ var lines=Dialogues[proto.id]||["Steel answers steel."];s.dialogue=lines[rand(lines.length)];
+ s.log=(s.elite?"An elite champion guards the stair: ":"A hostile figure appears: ")+proto.name+".";
  render();save()
 }
 function getMove(){var e=s.enemy;if(!e)return ["attack",0];var proto=Enemies.filter(function(x){return x.id===e.id})[0];return proto.moves[e.midx%proto.moves.length]}
 function moveAmount(){var m=getMove();return m[1]+(s.enemy?s.enemy.buff:0)+Math.floor(s.floor/4)}
-function moveLabel(){if(!s.enemy)return "—";var m=getMove(),v=moveAmount();return m[0]==="attack"?"⚔ STRIKE "+v:m[0]==="bleed"?"🩸 BLEED "+v:m[0]==="defend"?"🛡 GUARD "+v:"⬆ POWER +"+v}
+function intentInfo(){
+ if(!s.enemy||s.mode!=="battle")return {name:"✦ ROOM CLEARED",detail:"THE TOWER WAITS",cls:"skill"};
+ var m=getMove(),v=moveAmount(),weak=s.enemy.weak>0;var dmg=weak?Math.ceil(v*.75):v;
+ if(m[0]==="attack")return {name:"⚔ SWORD SWING · "+dmg,detail:"MELEE · 1 HIT"+(weak?" · WEAKENED":""),cls:"attack"};
+ if(m[0]==="bleed")return {name:"🗡 BLEEDING STAB · "+dmg,detail:"MELEE · 1 HIT + BLEED 2",cls:"attack"};
+ if(m[0]==="shoot")return {name:"🏹 ARROW SHOT · "+dmg,detail:"RANGED · 1 PROJECTILE",cls:"attack"};
+ if(m[0]==="spell")return {name:"🔮 SPELL BLAST · "+dmg,detail:"MAGIC · 1 PROJECTILE",cls:"cast"};
+ if(m[0]==="multi")return {name:"⚔ DOUBLE STRIKE · "+(dmg*2),detail:"MELEE · 2 HITS OF "+dmg,cls:"attack"};
+ if(m[0]==="defend")return {name:"🛡 RAISE SHIELD · "+v,detail:"DEFENSE · NO DAMAGE",cls:"skill"};
+ return {name:"⬆ EMPOWER · +"+v,detail:"BUFF · NO DAMAGE",cls:"cast"}
+}
+function moveLabel(){return intentInfo().name}
+
 function sound(freq){if(!soundOn)return;try{var C=window.AudioContext||window.webkitAudioContext;audioCtx=audioCtx||new C();if(audioCtx.state==="suspended")audioCtx.resume();var o=audioCtx.createOscillator(),g=audioCtx.createGain(),t=audioCtx.currentTime;o.type="triangle";o.frequency.setValueAtTime(freq,t);o.frequency.exponentialRampToValueAtTime(Math.max(50,freq*.6),t+.1);g.gain.setValueAtTime(.11,t);g.gain.exponentialRampToValueAtTime(.0001,t+.14);o.connect(g);g.connect(audioCtx.destination);o.start(t);o.stop(t+.15)}catch(e){}}
 function floatOn(side,text,cls){var wrap=id(side==="enemy"?"enemy-side":"player-side"),el=document.createElement("b");el.className="float "+(cls||"");el.textContent=text;wrap.appendChild(el);setTimeout(function(){el.remove()},780)}
 function toast(txt){var el=id("toast");el.textContent=txt;el.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(function(){el.classList.remove("show")},950)}
