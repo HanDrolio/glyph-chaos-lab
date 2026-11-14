@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#101b25">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>THIEFSPIRE · Pocket Roguelike</title>
+<style>
+:root{--ink:#eceddf;--mute:#aab3ae;--dark:#101922;--panel:#15232a;--edge:#53695f;--mint:#9ec5aa;--gold:#ecd18d;--red:#e98d80;--blue:#85becd;--font:Georgia,"Times New Roman",serif}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;margin:0;background:#0b141b;color:var(--ink)}
+body{font-family:var(--font);touch-action:pan-x}
+button{font:inherit;cursor:pointer}
+button:focus-visible,.card:focus-visible{outline:3px solid #f5d78b;outline-offset:3px}
+#game{width:min(100%,510px);height:100dvh;margin:auto;display:flex;flex-direction:column;overflow:hidden;position:relative;border-inline:1px solid #3c534a;background:linear-gradient(#12232a,#182c2b 45%,#0d1721);box-shadow:0 0 120px #000a}
+#top{padding:calc(11px + env(safe-area-inset-top)) 14px 8px;background:linear-gradient(#172c32,#15242b);border-bottom:3px solid #789083;z-index:2}
+.topline,.lootline,.arena-head,.hudline,.handhead,.footline,.statline{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.brand{font-weight:900;font-size:clamp(17px,4.7vw,24px);letter-spacing:.11em;color:#e5dbc1;text-shadow:2px 2px #314545}
+.subtitle{font:700 10px system-ui,sans-serif;letter-spacing:.18em;color:#a1bbb5;margin-top:2px}
+.floor,.coins{font:800 11px system-ui,sans-serif;white-space:nowrap;color:#e7d49b}
+.lootline{padding-top:11px;align-items:flex-start}
+.loottitle{color:#d6e0cd;font:700 11px system-ui,sans-serif;letter-spacing:.13em;text-transform:uppercase;padding:5px 0}
+#relics{flex:1;display:flex;flex-wrap:wrap;gap:5px;min-height:28px}
+.relic{height:29px;min-width:29px;padding:2px 5px;background:#334840;border:1px solid #78938a;border-radius:6px;display:grid;place-items:center;font-size:17px}
+.empty-relic{font:italic 11px system-ui,sans-serif;color:#849b91;padding:5px 0}
+.mini{border:1px solid #6b857b;border-radius:6px;background:#243b3a;color:#dce8dd;padding:6px 10px;font:700 11px system-ui,sans-serif}
+#arena{flex:1;min-height:0;position:relative;display:flex;flex-direction:column;overflow:hidden;background:radial-gradient(ellipse at center 42%,#435b53 0%,#21393b 39%,#10202b 82%)}
+#arena:before{content:"";pointer-events:none;position:absolute;inset:0;opacity:.18;background:repeating-linear-gradient(90deg,transparent 0 27px,#09151a 27px 29px,transparent 29px 56px),repeating-linear-gradient(0deg,transparent 0 38px,#07171d 38px 40px,transparent 40px 80px);mask-image:linear-gradient(#000,transparent 65%)}
+#arena:after{content:"";position:absolute;left:0;right:0;bottom:0;height:26%;pointer-events:none;background:linear-gradient(transparent,#13252a 70%,#17262b)}
+.arena-head{position:relative;z-index:1;padding:10px 14px 4px;font:700 10px system-ui,sans-serif;color:#b5c8bf;letter-spacing:.12em}
+#encounter-name{font-size:11px;color:#e7ddb9}
+#fighters{flex:1;min-height:0;position:relative;z-index:1;display:grid;grid-template-columns:1fr 1fr;align-items:end;gap:2px;padding:5px 10px 16px}
+.fighter{position:relative;min-width:0;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.sprite-wrap{position:relative;width:100%;display:flex;align-items:flex-end;justify-content:center;min-height:0;flex:1}
+.sprite-wrap:before{content:"";position:absolute;bottom:3px;width:73%;height:16px;border-radius:50%;background:#06121788;filter:blur(4px)}
+canvas.sprite{width:min(100%,164px);max-height:100%;height:auto;aspect-ratio:1;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(3px 8px 0 #08141b65)}
+.name{font-weight:900;font-size:clamp(13px,3.6vw,17px);letter-spacing:.02em;color:#f6e7c3;text-shadow:1px 2px #13202a;margin-bottom:4px}
+.healthbar{height:11px;width:94%;max-width:175px;background:#391f26;border:2px solid #92a193;border-radius:4px;overflow:hidden;position:relative;box-shadow:0 1px #0c1417}
+.healthbar>span{height:100%;display:block;background:linear-gradient(90deg,#aa544a,#e88771);transition:width .25s}
+.statline{width:94%;max-width:175px;margin:3px 0;color:#ebeddd;font:800 11px system-ui,sans-serif}
+.statuses{min-height:23px;width:100%;display:flex;justify-content:center;align-items:center;gap:3px;flex-wrap:wrap}
+.status{font:700 10px system-ui,sans-serif;border:1px solid #768278;background:#263b3e;padding:3px 5px;border-radius:4px;white-space:nowrap}
+.intent{position:absolute;top:2px;left:50%;transform:translateX(-50%);max-width:100%;white-space:nowrap;background:#192b33e8;border:1px solid #8a9183;color:#f4dbb5;padding:5px 8px;border-radius:7px;font:800 10px system-ui,sans-serif;z-index:2;box-shadow:0 3px 0 #0b1b20}
+#battlelog{position:relative;z-index:2;min-height:29px;padding:7px 14px;font:italic 12px var(--font);text-align:center;color:#d4d9c5;background:#17282ad9;border-top:1px solid #526f66}
+#hand-section{background:linear-gradient(#1a2930,#101b24);border-top:3px solid #a5bba4;flex:none;min-height:0;padding:8px 0 calc(10px + env(safe-area-inset-bottom))}
+.handhead{padding:0 13px 9px}
+.energy{font:900 14px system-ui,sans-serif;color:#eddaa0;white-space:nowrap}
+.energy strong{font-size:22px}
+.deckinfo{font:700 10px system-ui,sans-serif;color:#9cafaa;white-space:nowrap}
+#endturn{padding:9px 13px;border:2px solid #d4c39c;border-radius:8px;color:#1b2c29;background:#e7c784;font:900 12px system-ui,sans-serif;box-shadow:0 3px #927d58;white-space:nowrap}
+#endturn:disabled{opacity:.45;filter:grayscale(.5)}
+#hand{height:clamp(167px,26dvh,226px);display:flex;align-items:stretch;overflow-x:auto;overflow-y:hidden;gap:9px;padding:0 13px 8px;scroll-snap-type:x proximity;scrollbar-width:none}
+#hand::-webkit-scrollbar{display:none}
+.card{position:relative;flex:0 0 clamp(122px,32vw,152px);scroll-snap-align:start;border:3px solid #bbc9b4;border-radius:12px;background:linear-gradient(145deg,#344b46,#24393a);display:flex;flex-direction:column;align-items:center;padding:11px 8px 8px;color:#f2ead4;text-align:center;box-shadow:0 4px 0 #08161b,0 0 0 1px #10221e inset;transition:transform .12s,opacity .12s;user-select:none}
+.card.attack{border-color:#d19d8a;background:linear-gradient(145deg,#594242,#322c38)}
+.card.skill{border-color:#8dc0bd;background:linear-gradient(145deg,#2e5052,#25363f)}
+.card.power{border-color:#e8d08d;background:linear-gradient(145deg,#635843,#363b3b)}
+.card:active{transform:translateY(4px) scale(.97)}
+.card.off{opacity:.44}
+.card .cost{position:absolute;left:-6px;top:-7px;border:2px solid #cfecdd;width:29px;height:29px;display:grid;place-items:center;background:#236579;border-radius:50%;font:900 14px system-ui,sans-serif;color:#fff}
+.card .glyph{font-size:33px;line-height:1.2;margin-top:12px;filter:drop-shadow(0 3px #0a151a)}
+.card .title{font:bold 15px var(--font);margin-top:10px;line-height:1.07}
+.card .desc{font:11px/1.3 system-ui,sans-serif;color:#dee2d3;margin:auto 0;max-width:100%}
+.card .type{font:800 9px system-ui,sans-serif;letter-spacing:.14em;color:#d3d1bc}
+.card .up{position:absolute;right:5px;top:4px;color:#f7d578;font:900 13px system-ui,sans-serif}
+#foot{padding:5px 14px 0;color:#8fa49b;font:10px system-ui,sans-serif;text-align:center;letter-spacing:.04em}
+.float{position:absolute;left:50%;top:45%;z-index:12;pointer-events:none;color:#ffeabc;font:900 22px system-ui,sans-serif;text-shadow:2px 2px #000;animation:floatup .75s forwards}
+.float.red{color:#ff9c88}.float.green{color:#a7e2b6}
+@keyframes floatup{from{opacity:1;transform:translate(-50%,0) scale(.8)}to{opacity:0;transform:translate(-50%,-57px) scale(1.25)}}
+#modal{display:none;position:absolute;inset:0;z-index:20;background:#07121ddd;backdrop-filter:blur(5px);padding:calc(25px + env(safe-area-inset-top)) 18px calc(20px + env(safe-area-inset-bottom));align-items:center;justify-content:center}
+#modal.show{display:flex}
+.modalbox{width:100%;max-height:100%;overflow-y:auto;border:3px solid #9bb5a2;border-radius:15px;background:linear-gradient(150deg,#254047,#101d29);padding:18px 15px 20px;box-shadow:0 10px 0 #081218,0 20px 45px #000b}
+.modalbox h2{font-size:27px;color:#f1d995;text-align:center;letter-spacing:.03em;margin:7px 0 8px}
+.modalbox p{font:14px/1.55 system-ui,sans-serif;text-align:center;color:#ccd9cc;margin:8px 0 18px}
+.modaleyebrow{text-align:center;font:900 10px system-ui,sans-serif;letter-spacing:.21em;color:#a4d6c8}
+.choices{display:grid;gap:9px}
+.choice{display:flex;align-items:center;text-align:left;gap:12px;width:100%;background:#2a4646;border:2px solid #739487;border-radius:9px;padding:12px;color:#f3efdc}
+.choice:active{transform:scale(.98)}
+.choice .icon{font-size:30px;flex:none}
+.choice strong{font-size:16px}
+.choice small{font:12px/1.4 system-ui,sans-serif;color:#c9d8d1;display:block;margin-top:3px}
+.action{width:100%;margin-top:13px;border:2px solid #f3dfac;border-radius:8px;background:#dfc38c;color:#24332e;padding:12px;font:900 13px system-ui,sans-serif}
+.secondary{background:#30474d;color:#e5eadd;border-color:#7f9b96}
+.inventory{max-height:46dvh;overflow-y:auto;background:#10232a;border:1px solid #4e6c66;border-radius:8px;padding:9px;color:#d8dfd2;font:12px/1.7 system-ui,sans-serif;text-align:left}
+#toast{position:absolute;z-index:25;top:30%;left:50%;transform:translateX(-50%);border-radius:8px;background:#152529ed;border:1px solid #e4d29f;color:#f0e4bd;padding:8px 15px;font:800 13px system-ui,sans-serif;pointer-events:none;opacity:0;transition:opacity .18s;white-space:nowrap}
+#toast.show{opacity:1}
+@media(max-height:690px){#top{padding-top:calc(4px + env(safe-area-inset-top))}.hero{padding:0}.lootline{padding-top:5px}#hand{height:150px}.card .glyph{font-size:26px;margin-top:4px}.card .title{margin-top:5px}.card .desc{font-size:10px}.arena-head{padding-top:4px}#fighters{padding-bottom:4px}.intent{top:-2px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="game">
+  <header id="top">
+    <div class="topline"><div><div class="brand">⚔ THIEFSPIRE</div><div class="subtitle">THE GOLDEN VAULT</div></div><div style="text-align:right"><div class="floor" id="floor">FLOOR 01 / 12</div><div class="coins" id="gold">🪙 25 GOLD</div></div></div>
+    <div class="lootline"><div class="loottitle">Relics / Loot</div><div id="relics"><span class="empty-relic">Nothing stolen yet</span></div><button class="mini" id="bag" aria-label="Open inventory">BAG ☰</button><button class="mini" id="sound" aria-label="Toggle sound">♪</button></div>
+  </header>
+  <main id="arena">
+    <div class="arena-head"><span id="room">THE LOWER KEEP</span><span id="encounter-name">ENCOUNTER 01</span></div>
+    <div id="fighters">
+      <div class="fighter" id="player-side">
+        <div class="sprite-wrap"><canvas id="thief-sprite" class="sprite" width="64" height="64" aria-label="Pixel-art hooded thief"></canvas></div>
+        <div class="name">THE THIEF</div>
+        <div class="healthbar"><span id="player-fill"></span></div>
+        <div class="statline"><span id="player-hp">68 / 68 HP</span><span id="player-block">🛡 0</span></div>
+        <div class="statuses" id="player-status"></div>
+      </div>
+      <div class="fighter" id="enemy-side">
+        <div class="intent" id="intent">⚔ ATTACK 7</div>
+        <div class="sprite-wrap"><canvas id="enemy-sprite" class="sprite" width="64" height="64" aria-label="Pixel-art enemy"></canvas></div>
+        <div class="name" id="enemy-name">GATE GUARD</div>
+        <div class="healthbar"><span id="enemy-fill"></span></div>
+        <div class="statline"><span id="enemy-hp">36 / 36 HP</span><span id="enemy-block">🛡 0</span></div>
+        <div class="statuses" id="enemy-status"></div>
+      </div>
+    </div>
+    <div id="battlelog" role="status" aria-live="polite">The tower waits for no one.</div>
+  </main>
+  <section id="hand-section" aria-label="Hand of cards">
+    <div class="handhead"><div class="energy">✦ ENERGY <strong id="energy">3</strong> / 3</div><span class="deckinfo" id="deckinfo">DRAW 6 · DISCARD 0</span><button id="endturn">END TURN ↵</button></div>
+    <div id="hand"></div>
+    <div id="foot">TAP A CARD TO PLAY · SWIPE FOR MORE</div>
+  </section>
+  <div id="modal" role="dialog" aria-modal="true"><div class="modalbox" id="modalcontent"></div></div>
+  <div id="toast" role="status"></div>
+</div>
+<script>
+(function(){
+"use strict";
+var KEY="thiefspire_pocket_v1_2026";
+var Card={
+strike:{name:"Knife Slash",icon:"🗡️",cost:1,type:"attack",desc:"Deal 7 damage."},
+guard:{name:"Take Cover",icon:"🛡️",cost:1,type:"skill",desc:"Gain 6 Block."},
+quick:{name:"Quick Cut",icon:"⚡",cost:0,type:"attack",desc:"Deal 3. Apply 1 Bleed."},
+feint:{name:"Feint",icon:"🎭",cost:1,type:"skill",desc:"Gain 5 Block. Weaken enemy."},
+backstab:{name:"Backstab",icon:"🔪",cost:2,type:"attack",desc:"Deal 15. +5 vs Exposed."},
+smoke:{name:"Smoke Bomb",icon:"💨",cost:1,type:"skill",desc:"Gain 10 Block. Weaken enemy."},
+poison:{name:"Venom Vial",icon:"🧪",cost:1,type:"skill",desc:"Apply 5 Bleed."},
+double:{name:"Twin Daggers",icon:"⚔️",cost:1,type:"attack",desc:"Strike twice for 4."},
+trick:{name:"Dirty Trick",icon:"🪄",cost:1,type:"skill",desc:"Apply 2 Exposed. Draw 1."},
+cloak:{name:"Shadow Cloak",icon:"🌑",cost:1,type:"skill",desc:"Gain 13 Block."},
+siphon:{name:"Life Steal",icon:"💜",cost:2,type:"attack",desc:"Deal 10. Heal 4."},
+gambit:{name:"Gambit",icon:"🎲",cost:0,type:"skill",desc:"Lose 2 HP. Draw 2."},
+pierce:{name:"Piercing Blow",icon:"🏹",cost:2,type:"attack",desc:"Deal 17. Ignore Block."},
+sharpen:{name:"Sharpen",icon:"✨",cost:1,type:"power",desc:"Gain 1 Energy. Draw 2."},
+rally:{name:"Battle Rhythm",icon:"🥁",cost:1,type:"skill",desc:"Gain 5 Block. Draw 2."},
+hex:{name:"Cursed Blade",icon:"🔥",cost:2,type:"attack",desc:"Deal 8. Apply 5 Bleed."}
+};
+var Relic={
+fang:{icon:"🦷",name:"Venom Fang",desc:"Every attack applies +1 Bleed."},
+ring:{icon:"💍",name:"Iron Ring",desc:"+10 Max HP and heal 10 immediately."},
+lantern:{icon:"🏮",name:"Hollow Lantern",desc:"+1 Energy on the first turn of each fight."},
+rune:{icon:"🔥",name:"Cinder Rune",desc:"All attacks deal +2 damage."},
+watch:{icon:"⌛",name:"Pocket Watch",desc:"Draw 1 extra card at the start of each fight."},
+clasp:{icon:"🧷",name:"Cloak Clasp",desc:"Start every turn with 3 Block."},
+heart:{icon:"🫀",name:"Obsidian Heart",desc:"Heal 5 HP after every victory."}
+};
+var Enemies=[
+{id:"guard",name:"GATE GUARD",hp:28,moves:[["attack",7],["defend",7],["attack",9]]},
+{id:"goblin",name:"DAGGER GOBLIN",hp:25,moves:[["attack",6],["attack",8],["buff",3]]},
+{id:"slime",name:"MOSS SLIME",hp:30,moves:[["defend",6],["attack",8],["attack",8]]},
+{id:"cultist",name:"ASH CULTIST",hp:32,moves:[["buff",3],["attack",10],["attack",8]]},
+{id:"rat",name:"TOWER RAT",hp:27,moves:[["attack",7],["bleed",6],["attack",8]]},
+{id:"knight",name:"IRON KNIGHT",hp:43,moves:[["defend",12],["attack",12],["attack",9]]},
+{id:"wraith",name:"DUSK WRAITH",hp:35,moves:[["bleed",7],["attack",10],["defend",9]]},
+{id:"imp",name:"EMBER IMP",hp:33,moves:[["attack",8],["buff",4],["attack",11]]},
+{id:"ogre",name:"DUNGEON OGRE",hp:55,moves:[["attack",14],["defend",9],["attack",12]]},
+{id:"warden",name:"GOLDEN WARDEN",hp:112,moves:[["attack",13],["defend",14],["bleed",11],["buff",4],["attack",17]]}
+];
+var s,modalState="",soundOn=false,audioCtx,toastTimer,animNonce=0;
+function id(x){return document.getElementById(x)}
+function rand(n){return Math.floor(Math.random()*n)}
+function shuffle(a){for(var i=a.length-1;i>0;i--){var j=rand(i+1),v=a[i];a[i]=a[j];a[j]=v}return a}
+function initial(){return {version:1,floor:1,hp:68,maxHp:68,block:0,weak:0,bleed:0,energy:3,gold:25,relics:[],deck:["strike","strike","strike","strike","strike","guard","guard","guard","guard","quick","feint"],draw:[],discard:[],hand:[],turn:1,enemy:null,mode:"battle",log:"A locked vault awaits above.",rewardChoices:[],lootText:"",wins:0}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(s))}catch(e){}}
+function has(id){return s.relics.indexOf(id)>=0}
+function cardKey(key){return key.replace("+","")}
+function up(key){return key.indexOf("+")>=0}
+function power(key,v){return v+(up(key)?3:0)}
+function hpAdd(n){s.hp=Math.min(s.maxHp,s.hp+Math.max(0,n))}
+function drawCards(n){for(var i=0;i<n;i++){if(!s.draw.length){if(!s.discard.length)break;s.draw=shuffle(s.discard.splice(0))}s.hand.push(s.draw.pop())}}
+function pickEnemy(){if(s.floor===12)return Enemies[9];var pool=s.floor<4?Enemies.slice(0,4):s.floor<8?Enemies.slice(1,7):Enemies.slice(3,9);return pool[rand(pool.length)]}
+function startFloor(){
+ if(s.floor===4||s.floor===8){s.mode="camp";s.log="A quiet corner in the tower.";render();save();return}
+ var proto=pickEnemy(),scale=Math.max(0,s.floor-1);
+ s.enemy={id:proto.id,name:proto.name,hp:proto.hp+scale*3,maxHp:proto.hp+scale*3,block:0,bleed:0,weak:0,exposed:0,midx:0,buff:0};
+ s.mode="battle";s.block=has("clasp")?3:0;s.weak=0;s.bleed=0;s.turn=1;s.energy=3+(has("lantern")?1:0);
+ s.draw=shuffle(s.deck.slice());s.discard=[];s.hand=[];drawCards(5+(has("watch")?1:0));
+ s.log="A "+proto.name.toLowerCase()+" blocks your path.";
+ render();save()
+}
+function getMove(){var e=s.enemy;if(!e)return ["attack",0];var proto=Enemies.filter(function(x){return x.id===e.id})[0];return proto.moves[e.midx%proto.moves.length]}
+function moveAmount(){var m=getMove();return m[1]+(s.enemy?s.enemy.buff:0)+Math.floor(s.floor/4)}
+function moveLabel(){if(!s.enemy)return "—";var m=getMove(),v=moveAmount();return m[0]==="attack"?"⚔ STRIKE "+v:m[0]==="bleed"?"🩸 BLEED "+v:m[0]==="defend"?"🛡 GUARD "+v:"⬆ POWER +"+v}
+function sound(freq){if(!soundOn)return;try{var C=window.AudioContext||window.webkitAudioContext;audioCtx=audioCtx||new C();if(audioCtx.state==="suspended")audioCtx.resume();var o=audioCtx.createOscillator(),g=audioCtx.createGain(),t=audioCtx.currentTime;o.type="triangle";o.frequency.setValueAtTime(freq,t);o.frequency.exponentialRampToValueAtTime(Math.max(50,freq*.6),t+.1);g.gain.setValueAtTime(.11,t);g.gain.exponentialRampToValueAtTime(.0001,t+.14);o.connect(g);g.connect(audioCtx.destination);o.start(t);o.stop(t+.15)}catch(e){}}
+function floatOn(side,text,cls){var wrap=id(side==="enemy"?"enemy-side":"player-side"),el=document.createElement("b");el.className="float "+(cls||"");el.textContent=text;wrap.appendChild(el);setTimeout(function(){el.remove()},780)}
+function toast(txt){var el=id("toast");el.textContent=txt;el.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(function(){el.classList.remove("show")},950)}
+function hurtEnemy(n,ignoreBlock){var e=s.enemy,d=Math.max(0,n+(has("rune")?2:0));if(s.weak>0)d=Math.ceil(d*.75);if(e.exposed>0)d=Math.ceil(d*1.5);var b=ignoreBlock?0:Math.min(e.block,d);e.block-=b;var final=Math.max(0,d-b);e.hp=Math.max(0,e.hp-final);floatOn("enemy","-"+final,"red");if(has("fang"))e.bleed++;return final}
+function gainBlock(n){s.block+=n;floatOn("player","🛡 +"+n,"green")}
+function damagePlayer(n){var d=Math.max(0,n);var blocked=Math.min(s.block,d);s.block-=blocked;d-=blocked;s.hp=Math.max(0,s.hp-d);floatOn("player","-"+d,"red");if(s.hp<=0){s.mode="lost";s.log="The tower claims another thief."}return d}
+function playCard(index){
+ if(s.mode!=="battle"||modalState)return;
+ var key=s.hand[index];if(!key)return;var c=Card[cardKey(key)];if(!c)return;
+ if(s.energy<c.cost){toast("NOT ENOUGH ENERGY");sound(130);return}
+ s.energy-=c.cost;s.hand.splice(index,1);s.discard.push(key);
+ var e=s.enemy,v,note=c.name;
+ switch(cardKey(key)){
+ case "strike":hurtEnemy(power(key,7));break;
+ case "guard":gainBlock(power(key,6));break;
+ case "quick":hurtEnemy(power(key,3));e.bleed+=up(key)?2:1;break;
+ case "feint":gainBlock(power(key,5));e.weak+=up(key)?2:1;break;
+ case "backstab":hurtEnemy(power(key,15)+(e.exposed>0?5:0));break;
+ case "smoke":gainBlock(power(key,10));e.weak+=1;break;
+ case "poison":e.bleed+=power(key,5);floatOn("enemy","🩸 +"+power(key,5),"red");break;
+ case "double":hurtEnemy(power(key,4));if(e.hp>0)hurtEnemy(power(key,4));break;
+ case "trick":e.exposed+=up(key)?3:2;drawCards(1);break;
+ case "cloak":gainBlock(power(key,13));break;
+ case "siphon":hurtEnemy(power(key,10));hpAdd(up(key)?7:4);break;
+ case "gambit":damagePlayer(2);if(s.mode!=="lost")drawCards(up(key)?3:2);break;
+ case "pierce":hurtEnemy(power(key,17),true);break;
+ case "sharpen":s.energy+=up(key)?2:1;drawCards(2);break;
+ case "rally":gainBlock(power(key,5));drawCards(2);break;
+ case "hex":hurtEnemy(power(key,8));e.bleed+=up(key)?7:5;break;
+ }
+ s.log="You played "+note+".";sound(c.type==="attack"?320:540);
+ if(s.mode==="battle"&&s.enemy.hp<=0)winEncounter();
+ render();save()
+}
+function winEncounter(){
+ var gain=10+rand(10)+s.floor*2;s.gold+=gain;s.wins++;if(has("heart"))hpAdd(5);
+ s.lootText="🪙 +"+gain+" gold"+(has("heart")?" · 💚 +5 HP":"");
+ if([3,7,11].indexOf(s.floor)>=0){
+ var available=Object.keys(Relic).filter(function(r){return !has(r)});
+ if(available.length){var r=available[rand(available.length)];s.relics.push(r);if(r==="ring"){s.maxHp+=10;hpAdd(10)}s.lootText+=" · "+Relic[r].icon+" "+Relic[r].name}
+ }
+ var pool=Object.keys(Card).filter(function(k){return ["strike","guard"].indexOf(k)<0});
+ s.rewardChoices=shuffle(pool).slice(0,3);s.mode="reward";s.log="The "+s.enemy.name.toLowerCase()+" falls. Loot the room.";sound(740)
+}
+function endTurn(){
+ if(s.mode!=="battle"||modalState)return;
+ s.discard.push.apply(s.discard,s.hand.splice(0));var e=s.enemy;
+ if(e.bleed>0){var b=e.bleed;e.hp=Math.max(0,e.hp-b);e.bleed--;floatOn("enemy","🩸 -"+b,"red")}
+ if(e.hp<=0){winEncounter();render();save();return}
+ e.block=0;var m=getMove(),n=moveAmount(),msg="";
+ if(m[0]==="attack"||m[0]==="bleed"){
+  if(e.weak>0)n=Math.ceil(n*.75);
+  var d=damagePlayer(n);msg=e.name+" attacks for "+d+" damage.";
+  if(m[0]==="bleed"&&d>0){s.bleed+=2;msg+=" You are bleeding!"}
+ }else if(m[0]==="defend"){e.block+=n;msg=e.name+" gains "+n+" Block."}
+ else{e.buff+=n;msg=e.name+" sharpens their power!"}
+ e.midx++;if(e.weak>0)e.weak--;if(e.exposed>0)e.exposed--;
+ if(s.mode!=="lost"){
+  if(s.bleed>0){var dot=s.bleed;s.hp=Math.max(0,s.hp-dot);s.bleed--;msg+=" Bleed costs "+dot+" HP.";if(s.hp===0)s.mode="lost"}
+  if(s.weak>0)s.weak--;
+  s.turn++;s.block=has("clasp")?3:0;s.energy=3;drawCards(5);s.log=msg;
+ }else{s.log=msg}
+ sound(180);render();save()
+}
+function nextFloor(){s.floor++;startFloor()}
+function chooseReward(key){if(s.mode!=="reward")return;if(key!=="skip"&&Card[key])s.deck.push(key);modalState="";nextFloor()}
+function camp(action){if(s.mode!=="camp")return;if(action==="heal"){hpAdd(20)}else if(action==="upgrade"){var choices=s.deck.filter(function(k){return !up(k)});if(choices.length){var chosen=choices[rand(choices.length)],i=s.deck.indexOf(chosen);s.deck[i]=chosen+"+";s.log=Card[chosen].name+" improved!"}else{hpAdd(12)}}nextFloor()}
+function reset(){modalState="";s=initial();startFloor()}
+function statuses(who){var e=who==="enemy"?s.enemy:s;if(!e)return "";var arr=[];if(e.bleed>0)arr.push("🩸 "+e.bleed);if(e.weak>0)arr.push("💫 Weak "+e.weak);if(e.exposed>0)arr.push("🎯 Exposed "+e.exposed);if(e.buff>0)arr.push("⬆ "+e.buff);return arr.length?arr.map(function(v){return '<span class="status">'+v+"</span>"}).join(""):'<span class="status" style="opacity:.5">NO EFFECTS</span>'}
+function renderCards(){var box=id("hand");box.innerHTML="";if(s.mode!=="battle"){box.innerHTML='<div style="padding:35px;color:#a3bcb2;font:italic 16px Georgia">Your cards will return when the next battle begins…</div>';return}
+ s.hand.forEach(function(key,i){var c=Card[cardKey(key)];if(!c)return;var el=document.createElement("button");el.className="card "+c.type+(s.energy<c.cost?" off":"");el.setAttribute("aria-label",c.name+", "+c.cost+" energy");el.innerHTML='<span class="cost">'+c.cost+'</span>'+(up(key)?'<span class="up">★</span>':"")+'<span class="glyph">'+c.icon+'</span><span class="title">'+c.name+'</span><span class="desc">'+(up(key)?"★ Upgraded · ":"")+c.desc+'</span><span class="type">'+c.type.toUpperCase()+'</span>';el.addEventListener("click",function(){playCard(i)});box.appendChild(el)})
+}
+function choice(icon,title,desc,action){return '<button class="choice" data-action="'+action+'"><span class="icon">'+icon+'</span><span><strong>'+title+'</strong><small>'+desc+'</small></span></button>'}
+function renderModal(){
+ var box=id("modalcontent"),show=s.mode!=="battle"||modalState!=="";
+ id("modal").classList.toggle("show",show);
+ if(!show){box.innerHTML="";return}
+ var h="",k;
+ if(modalState==="bag"){
+ h='<div class="modaleyebrow">THE THIEF’S SATCHEL</div><h2>Relics & Loot</h2><p>🪙 '+s.gold+' gold · '+s.deck.length+' cards · Floor '+s.floor+'</p><div class="inventory"><strong>RELICS</strong><hr>';
+ h+=(s.relics.length?s.relics.map(function(r){return Relic[r].icon+" <b>"+Relic[r].name+"</b>: "+Relic[r].desc}).join("<br>"):"No relics collected.");
+ h+='<hr><strong>DECK</strong><br>'+s.deck.map(function(key){var c=Card[cardKey(key)];return c.icon+" "+c.name+(up(key)?" ★":"")}).join(" · ")+'</div><button class="action secondary" data-action="close">BACK TO GAME</button><button class="action secondary" data-action="new">NEW RUN</button>'
+ }else if(modalState==="help"){
+ h='<div class="modaleyebrow">HOW TO SURVIVE</div><h2>THIEFSPIRE</h2><p>Tap cards to spend Energy. Block stops damage for one round. Bleed deals damage at the end of a turn, then decreases. Weak lowers damage. Exposed makes the target take extra damage.</p><button class="action" data-action="close">BACK TO GAME</button>'
+ }else if(s.mode==="reward"){
+ h='<div class="modaleyebrow">ROOM CLEARED · FLOOR '+s.floor+'</div><h2>Claim Your Spoils</h2><p>'+s.lootText+'<br>Pick a card to permanently add to your deck.</p><div class="choices">';
+ s.rewardChoices.forEach(function(key){var c=Card[key];h+=choice(c.icon,c.name,c.cost+" ENERGY · "+c.desc,"reward:"+key)});
+ h+='</div><button class="action secondary" data-action="reward:skip">SKIP CARD · KEEP GOLD</button>';
+ }else if(s.mode==="camp"){
+ h='<div class="modaleyebrow">FLOOR '+s.floor+' · QUIET CHAMBER</div><h2>Rest by the Fire</h2><p>For once, nobody is trying to stab you. Choose how to spend this rare peace.</p><div class="choices">';
+ h+=choice("💚","Mend Your Wounds","Recover up to 20 HP.","camp:heal");
+ h+=choice("⚒️","Hone Your Deck","Upgrade one random unupgraded card.","camp:upgrade");
+ h+='</div>'
+ }else if(s.mode==="lost"){
+ h='<div class="modaleyebrow">THE TOWER REMAINS</div><h2>You Fell on Floor '+s.floor+'</h2><p>You cleared '+s.wins+' encounters and collected '+s.gold+' gold. The Golden Vault claims another thief.</p><button class="action" data-action="restart">TRY AGAIN</button>'
+ }else if(s.mode==="won"){
+ h='<div class="modaleyebrow">THE GOLDEN VAULT IS YOURS</div><h2>THE MASTER THIEF</h2><p>🪙 '+s.gold+' GOLD · '+s.wins+' VICTORIES<br>You defeated the Warden and escaped with the treasure. The tower will never forgive you.</p><button class="action" data-action="restart">NEW RUN</button>'
+ }
+ box.innerHTML=h
+}
+function render(){
+ id("floor").textContent="FLOOR "+String(s.floor).padStart(2,"0")+" / 12";
+ id("gold").textContent="🪙 "+s.gold+" GOLD";
+ id("relics").innerHTML=s.relics.length?s.relics.map(function(r){return '<span class="relic" title="'+Relic[r].name+'">'+Relic[r].icon+"</span>"}).join(""):'<span class="empty-relic">Nothing stolen yet</span>';
+ id("room").textContent=s.floor>=12?"THE GOLDEN VAULT":s.floor>=9?"THE IRON HEIGHTS":s.floor>=5?"THE INNER KEEP":"THE LOWER KEEP";
+ id("encounter-name").textContent=s.mode==="camp"?"REST CHAMBER":s.mode==="won"?"VAULT OPEN":"ENCOUNTER "+String(s.floor).padStart(2,"0");
+ id("player-hp").textContent=s.hp+" / "+s.maxHp+" HP";id("player-fill").style.width=(100*s.hp/s.maxHp)+"%";
+ id("player-block").textContent="🛡 "+s.block;id("player-status").innerHTML=statuses("player");
+ var e=s.enemy;
+ id("enemy-name").textContent=e?e.name:"NO ENEMY";
+ id("enemy-hp").textContent=e?e.hp+" / "+e.maxHp+" HP":"—";
+ id("enemy-fill").style.width=e?(100*e.hp/e.maxHp)+"%":"0%";
+ id("enemy-block").textContent="🛡 "+(e?e.block:0);
+ id("enemy-status").innerHTML=statuses("enemy");
+ id("intent").textContent=s.mode==="battle"?moveLabel():"✦ ENCOUNTER CLEARED";
+ id("energy").textContent=s.energy;
+ id("deckinfo").textContent="DRAW "+s.draw.length+" · DISCARD "+s.discard.length;
+ id("endturn").disabled=s.mode!=="battle";
+ id("battlelog").textContent=s.log;
+ renderCards();renderModal();
+ sprite(id("thief-sprite"),"thief");sprite(id("enemy-sprite"),e?e.id:"guard")
+}
+id("endturn").addEventListener("click",endTurn);
+id("bag").addEventListener("click",function(){modalState="bag";renderModal()});
+id("sound").addEventListener("click",function(){soundOn=!soundOn;id("sound").textContent=soundOn?"♫":"♪";sound(520)});
+id("modal").addEventListener("click",function(ev){var btn=ev.target.closest("[data-action]");if(!btn)return;var action=btn.getAttribute("data-action");if(action==="close"){modalState="";renderModal();return}if(action==="new"){if(confirm("Start a fresh run? Current progress will be erased."))reset();return}if(action==="restart"){reset();return}if(action.indexOf("reward:")===0){chooseReward(action.slice(7));return}if(action.indexOf("camp:")===0){camp(action.slice(5));return}});
+function sprite(canvas,type){
+ var c=canvas.getContext("2d");c.clearRect(0,0,64,64);c.imageSmoothingEnabled=false;
+ function R(x,y,w,h,col){c.fillStyle=col;c.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h))}
+ function P(pts,col){c.fillStyle=col;c.beginPath();c.moveTo(pts[0][0],pts[0][1]);for(var i=1;i<pts.length;i++)c.lineTo(pts[i][0],pts[i][1]);c.closePath();c.fill()}
+ function O(x,y,w,h,col,inner){R(x-2,y-2,w+4,h+4,col);R(x,y,w,h,inner)}
+ // Crisp ground shadow.
+ R(15,57,38,3,"#0d2329");
+ if(type==="thief"){
+  var edge="#192634",hood="#344855",mid="#526771",light="#7a9086",trim="#c3b48c",skin="#d2b181";
+  // boots, trailing cape, dagger
+  R(22,50,11,8,edge);R(39,49,10,9,edge);R(23,50,7,5,mid);R(40,49,7,6,mid);
+  P([[21,30],[44,29],[52,51],[42,54],[18,51],[12,43]],edge);
+  P([[22,32],[43,32],[47,49],[36,51],[19,47],[16,42]],hood);
+  R(26,39,17,6,"#283543");R(27,40,15,2,trim);
+  P([[8,43],[13,37],[19,42],[12,50]],"#879e92");
+  P([[7,45],[12,39],[16,42],[11,49]],"#e4e6c9");
+  R(12,32,10,12,edge);R(14,34,8,8,mid);
+  R(44,33,7,12,edge);R(44,35,5,9,mid);R(48,42,5,4,skin);
+  P([[17,14],[23,8],[37,7],[49,15],[51,29],[46,36],[18,35],[13,29]],edge);
+  P([[20,14],[26,10],[36,10],[46,16],[48,26],[41,32],[20,30],[16,26]],hood);
+  P([[22,14],[31,11],[42,15],[44,19],[22,18]],mid);
+  R(22,20,22,13,edge);P([[22,24],[27,19],[40,21],[43,27],[36,34],[27,30]],"#0d1727");
+  R(29,25,4,2,trim);R(39,25,3,2,trim);
+  R(18,28,7,3,light);R(40,31,7,2,trim);R(27,35,15,3,"#62445d");
+ }else if(type==="guard"||type==="knight"||type==="warden"){
+  var boss=type==="warden",kn=type==="knight"||boss;
+  var edge2="#212735",iron=kn?"#728da2":"#8c948f",shine=kn?"#acc5c6":"#c0bfac",dark="#465766",accent=boss?"#dcb768":kn?"#5b8f96":"#ba6658";
+  R(19,46,11,11,edge2);R(37,46,11,11,edge2);R(20,48,9,8,dark);R(38,48,9,8,dark);
+  P([[20,29],[45,29],[49,49],[35,53],[17,49]],edge2);
+  P([[22,31],[44,31],[45,46],[35,48],[20,46]],accent);
+  R(22,33,23,15,edge2);R(25,34,18,13,iron);R(27,37,14,8,dark);R(29,38,10,6,shine);
+  R(14,32,11,14,edge2);R(16,33,7,13,iron);R(43,33,10,15,edge2);R(45,34,7,12,iron);
+  // sword
+  R(8,29,3,21,"#c4d6ce");R(7,26,5,9,"#eef3db");R(4,40,11,3,"#bfa46d");R(8,43,3,9,"#594c3c");
+  // helmet
+  R(23,14,22,20,edge2);R(25,15,18,18,iron);R(25,21,18,5,shine);R(27,27,14,3,edge2);
+  R(28,27,4,2,boss?"#ffbd70":"#151e27");R(36,27,4,2,boss?"#ffbd70":"#151e27");
+  R(29,31,10,2,edge2);
+  if(kn){R(24,12,20,5,edge2);R(28,10,13,5,shine);R(34,6,5,7,accent)}
+  else{R(30,9,7,9,"#943c45");R(27,11,12,3,"#b55b54")}
+  if(boss){P([[21,19],[14,6],[23,13]],"#dec17c");P([[45,19],[54,6],[44,13]],"#dec17c");R(28,16,12,3,"#e8d992")}
+  // shield
+  P([[45,34],[57,36],[55,49],[49,55],[43,48]],edge2);
+  P([[47,37],[54,38],[53,47],[49,51],[46,47]],kn?"#6a9ba0":"#ab665a");
+  R(49,40,2,8,"#ddd8b4");R(47,43,6,2,"#ddd8b4");
+ }else if(type==="goblin"){
+  var e="#25353b";R(21,46,9,10,e);R(37,46,9,10,e);R(21,44,24,8,"#6a5043");
+  P([[20,30],[45,30],[48,48],[19,47]],e);R(24,33,18,13,"#8e7448");R(30,37,6,7,"#c2a566");
+  P([[16,23],[5,14],[9,30],[19,32]],e);P([[46,23],[59,13],[56,30],[44,33]],e);
+  P([[18,24],[9,19],[14,29]],"#79a86b");P([[44,24],[55,18],[51,29]],"#79a86b");
+  R(17,18,30,18,e);R(20,20,25,14,"#5d9164");R(20,24,25,7,"#8bb075");
+  R(25,27,5,3,"#e5cc77");R(37,27,5,3,"#e5cc77");R(27,28,2,2,e);R(39,28,2,2,e);
+  R(29,34,11,3,e);R(32,36,3,3,"#e7ddb0");R(37,36,3,3,"#e7ddb0");
+  P([[8,38],[14,31],[17,35],[11,46]],"#d0d2b8");R(46,36,9,4,"#a0774a");
+ }else if(type==="slime"){
+  var edge3="#233e43";P([[15,50],[12,44],[14,34],[23,24],[37,20],[49,27],[54,40],[51,51],[45,55],[20,55]],edge3);
+  P([[18,48],[18,36],[26,28],[39,26],[48,32],[50,45],[44,51],[22,51]],"#529981");
+  R(22,33,23,8,"#7abc95");R(20,43,28,5,"#3c806e");R(26,36,6,5,"#152b33");R(40,36,5,5,"#152b33");R(27,36,3,3,"#e7e6a9");R(41,36,2,3,"#e7e6a9");
+ }else if(type==="cultist"||type==="wraith"){
+  var ghost=type==="wraith";var shell=ghost?"#544e79":"#8f434f",highlight=ghost?"#8b89ae":"#b35b66",outline="#262638";
+  P([[29,9],[40,11],[48,22],[52,42],[44,54],[36,50],[28,56],[15,48],[16,25]],outline);
+  P([[28,12],[39,14],[45,24],[49,42],[43,49],[37,45],[28,52],[19,45],[19,27]],shell);
+  P([[28,13],[35,13],[43,23],[39,27],[23,27]],highlight);
+  P([[22,23],[28,18],[39,22],[42,34],[34,37],[24,32]],"#171d30");
+  R(26,29,5,3,ghost?"#9cead4":"#ffd084");R(37,29,4,3,ghost?"#9cead4":"#ffd084");R(29,39,8,4,ghost?"#98acae":"#5d343f");
+  R(15,35,5,11,shell);R(46,36,5,11,shell);R(18,48,9,3,highlight);
+  if(ghost){R(22,53,5,4,"#6a6f9c");R(35,52,8,5,"#646491")}
+  else{R(28,46,12,5,"#c09460");R(26,48,15,2,"#573b44")}
+ }else if(type==="rat"){
+  var edge4="#2d353c";P([[16,43],[9,34],[15,24],[29,21],[46,28],[53,41],[47,51],[23,52]],edge4);
+  P([[18,41],[15,32],[24,27],[41,29],[48,42],[43,48],[23,48]],"#78817e");
+  R(19,22,10,13,edge4);R(21,23,6,10,"#c9898b");R(37,21,11,13,edge4);R(39,23,7,9,"#c9898b");
+  R(28,34,5,4,"#fae8bc");R(42,34,5,4,"#fae8bc");R(30,35,2,2,edge4);R(44,35,2,2,edge4);R(36,42,6,4,"#dc9b9c");R(19,48,6,7,edge4);R(43,48,6,7,edge4);
+  P([[47,47],[56,43],[60,37],[62,32]],"#d69397");
+ }else if(type==="imp"){
+  var edge5="#342c3a";P([[15,46],[12,27],[18,17],[29,23],[37,14],[48,27],[52,48],[41,54],[22,53]],edge5);
+  P([[19,45],[18,29],[24,22],[33,29],[39,23],[47,31],[48,46],[39,49],[24,49]],"#ad4b46");
+  P([[23,20],[16,6],[31,21]],"#d67d4d");P([[40,20],[51,6],[36,22]],"#d67d4d");
+  R(23,33,7,4,"#f7d17b");R(39,33,6,4,"#f7d17b");R(26,39,16,5,edge5);R(29,42,3,5,"#ecdbb5");R(38,42,3,5,"#ecdbb5");
+  P([[18,43],[6,32],[9,45]],"#d57356");P([[49,43],[59,31],[57,45]],"#d57356")
+ }else if(type==="ogre"){
+  var edge6="#30333c";R(17,43,13,13,edge6);R(39,43,12,13,edge6);R(13,30,40,19,edge6);R(17,32,32,16,"#7f7773");
+  R(18,14,34,23,edge6);R(21,16,28,19,"#967e6e");R(14,25,9,17,"#967e6e");R(47,25,9,17,"#967e6e");
+  P([[22,20],[20,7],[29,18]],"#e0d3b1");P([[45,20],[49,7],[40,18]],"#e0d3b1");
+  R(25,26,7,4,"#e5b47c");R(40,26,6,4,"#e5b47c");R(28,27,3,3,edge6);R(42,27,3,3,edge6);
+  R(27,34,16,7,edge6);R(29,35,3,5,"#efdbb4");R(39,35,3,5,"#efdbb4");R(24,45,24,5,"#4b5055")
+ }
+ // shared glint for polished 8-bit feel
+ R(52,13,2,2,"#d2d6b28c")
+}
+try{var loaded=JSON.parse(localStorage.getItem(KEY)||"null");if(loaded&&loaded.version===1&&loaded.deck&&loaded.hp>=0){s=loaded;if(s.mode==="battle"&&!s.enemy)startFloor();else render()}else reset()}catch(e){s=initial();startFloor()}
+})();
+</script>
+</body></html>
