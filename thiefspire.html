@@ -383,13 +383,36 @@ function toast(txt){var el=id("toast");el.textContent=txt;el.classList.add("show
 function hurtEnemy(n,ignoreBlock){var e=s.enemy,d=Math.max(0,n+(has("rune")?2:0));if(s.weak>0)d=Math.ceil(d*.75);if(e.exposed>0)d=Math.ceil(d*1.5);var b=ignoreBlock?0:Math.min(e.block,d);e.block-=b;var final=Math.max(0,d-b);e.hp=Math.max(0,e.hp-final);floatOn("enemy","-"+final,"red");if(has("fang"))e.bleed++;return final}
 function gainBlock(n){s.block+=n;floatOn("player","🛡 +"+n,"green")}
 function damagePlayer(n){var d=Math.max(0,n);var blocked=Math.min(s.block,d);s.block-=blocked;d-=blocked;s.hp=Math.max(0,s.hp-d);floatOn("player","-"+d,"red");if(s.hp<=0){s.mode="lost";s.log="The tower claims another thief."}return d}
+
+function attackPlayer(n){return damagePlayer(n)}
+function useRing(){
+ if(s.mode!=="battle"||s.ringUsed)return;
+ s.ringUsed=true;var roll=rand(5),e=s.enemy,msg="";
+ if(roll===0){var g=5+rand(5);s.gold+=g;msg="The ring steals "+g+" gold from nowhere.";attackFx("player","magic")}
+ else if(roll===1){e.exposed+=2;msg="The ring reveals a weakness. Enemy Exposed +2.";attackFx("player","magic")}
+ else if(roll===2){e.bleed+=4;msg="The ring cuts a phantom wound. Bleed +4.";attackFx("player","stab")}
+ else if(roll===3){gainBlock(9);msg="The ring becomes a spectral shield.";attackFx("player","block")}
+ else{damagePlayer(2);drawCards(2);msg="The ring takes 2 HP and reveals two cards.";attackFx("player","magic")}
+ s.log="💍 "+msg;sound(560);render();save()
+}
+function drinkPotion(){
+ if(s.potions<1||s.hp>=s.maxHp||s.mode==="lost"||s.mode==="won")return;
+ s.potions--;hpAdd(13);s.log="You drink a healing potion and regain up to 13 HP.";
+ attackFx("player","heal");sound(620);render();save()
+}
 function playCard(index){
  if(s.mode!=="battle"||modalState)return;
  var key=s.hand[index];if(!key)return;var c=Card[cardKey(key)];if(!c)return;
  if(s.energy<c.cost){toast("NOT ENOUGH ENERGY");sound(130);return}
  s.energy-=c.cost;s.hand.splice(index,1);s.discard.push(key);
- var e=s.enemy,v,note=c.name;
- switch(cardKey(key)){
+ var e=s.enemy,note=c.name,fx="magic",type=cardKey(key);
+ if(c.type==="attack")fx="slash";
+ if(type==="double"||type==="quick")fx="double";
+ if(type==="backstab"||type==="ambush")fx="stab";
+ if(type==="pierce"||type==="hook")fx="arrow";
+ if(type==="poison"||type==="hex"||type==="flash")fx="magic";
+ if(type==="guard"||type==="cloak"||type==="evade"||type==="smoke"||type==="rally")fx="block";
+ switch(type){
  case "strike":hurtEnemy(power(key,7));break;
  case "guard":gainBlock(power(key,6));break;
  case "quick":hurtEnemy(power(key,3));e.bleed+=up(key)?2:1;break;
@@ -400,51 +423,181 @@ function playCard(index){
  case "double":hurtEnemy(power(key,4));if(e.hp>0)hurtEnemy(power(key,4));break;
  case "trick":e.exposed+=up(key)?3:2;drawCards(1);break;
  case "cloak":gainBlock(power(key,13));break;
- case "siphon":hurtEnemy(power(key,10));hpAdd(up(key)?7:4);break;
+ case "siphon":hurtEnemy(power(key,10));hpAdd(up(key)?7:4);fx="magic";break;
  case "gambit":damagePlayer(2);if(s.mode!=="lost")drawCards(up(key)?3:2);break;
  case "pierce":hurtEnemy(power(key,17),true);break;
  case "sharpen":s.energy+=up(key)?2:1;drawCards(2);break;
  case "rally":gainBlock(power(key,5));drawCards(2);break;
  case "hex":hurtEnemy(power(key,8));e.bleed+=up(key)?7:5;break;
+ case "pickpocket":hurtEnemy(power(key,4));if(!s.stolenThisFight){s.stolenThisFight=true;s.gold+=3;note+=" (+3 gold)"}break;
+ case "evade":gainBlock(power(key,8));drawCards(1);break;
+ case "flash":e.weak+=2;e.exposed+=1;break;
+ case "ambush":hurtEnemy(power(key,11)+(s.turn===1?9:0));break;
+ case "sap":hurtEnemy(power(key,6));e.weak+=1;break;
+ case "hook":hurtEnemy(power(key,9),true);break;
+ case "adrenaline":s.energy+=1;drawCards(1);break;
+ case "shade":hurtEnemy(power(key,5));gainBlock(5);break;
  }
- s.log="You played "+note+".";sound(c.type==="attack"?320:540);
+ attackFx("player",fx);
+ s.log="You play "+note+".";sound(c.type==="attack"?330:540);
  if(s.mode==="battle"&&s.enemy.hp<=0)winEncounter();
  render();save()
 }
-function winEncounter(){
- var gain=10+rand(10)+s.floor*2;s.gold+=gain;s.wins++;if(has("heart"))hpAdd(5);
- s.lootText="🪙 +"+gain+" gold"+(has("heart")?" · 💚 +5 HP":"");
- if([3,7,11].indexOf(s.floor)>=0){
+function getRelic(r){
+ if(!r||has(r)||!Relic[r])return false;
+ s.relics.push(r);
+ if(r==="ring"){s.maxHp+=10;hpAdd(10)}
+ return true
+}
+function randomRelic(){
  var available=Object.keys(Relic).filter(function(r){return !has(r)});
- if(available.length){var r=available[rand(available.length)];s.relics.push(r);if(r==="ring"){s.maxHp+=10;hpAdd(10)}s.lootText+=" · "+Relic[r].icon+" "+Relic[r].name}
- }
+ if(!available.length){s.gold+=25;return "🪙 +25 gold instead of a duplicate relic"}
+ var r=available[rand(available.length)];getRelic(r);
+ return Relic[r].icon+" "+Relic[r].name
+}
+function winEncounter(){
+ s.wins++;var gain=10+rand(10)+s.floor*2+(s.elite?25:0);
+ s.gold+=gain;if(has("heart"))hpAdd(5);
+ s.lootText="🪙 +"+gain+" gold"+(has("heart")?" · 💚 +5 HP":"");
+ if(s.floor===12){s.mode="won";s.gold+=100;s.log="The Golden Warden falls. The vault doors open.";s.dialogue="“You may keep the gold,” sighs the Thief's Ring. “I kept the stories.”";sound(780);return}
+ if(s.elite||[3,7,11].indexOf(s.floor)>=0){s.lootText+=" · "+randomRelic()}
  var pool=Object.keys(Card).filter(function(k){return ["strike","guard"].indexOf(k)<0});
- s.rewardChoices=shuffle(pool).slice(0,3);s.mode="reward";s.log="The "+s.enemy.name.toLowerCase()+" falls. Loot the room.";sound(740)
+ s.rewardChoices=shuffle(pool).slice(0,3);
+ s.mode="reward";s.log="The "+s.enemy.name.toLowerCase()+" falls. Loot the room.";
+ s.dialogue=s.elite?"The champion collapses among shattered banners. Their treasure is yours.":"Steel falls silent. The ring hums under your cloak.";
+ sound(740)
 }
 function endTurn(){
  if(s.mode!=="battle"||modalState)return;
  s.discard.push.apply(s.discard,s.hand.splice(0));var e=s.enemy;
  if(e.bleed>0){var b=e.bleed;e.hp=Math.max(0,e.hp-b);e.bleed--;floatOn("enemy","🩸 -"+b,"red")}
- if(e.hp<=0){winEncounter();render();save();return}
- e.block=0;var m=getMove(),n=moveAmount(),msg="";
- if(m[0]==="attack"||m[0]==="bleed"){
+ if(e.hp<=0){attackFx("player","magic");winEncounter();render();save();return}
+ e.block=0;var m=getMove(),n=moveAmount(),msg="",kind=m[0],hurt=0;
+ if(["attack","bleed","shoot","spell","multi"].indexOf(kind)>=0){
   if(e.weak>0)n=Math.ceil(n*.75);
-  var d=damagePlayer(n);msg=e.name+" attacks for "+d+" damage.";
-  if(m[0]==="bleed"&&d>0){s.bleed+=2;msg+=" You are bleeding!"}
- }else if(m[0]==="defend"){e.block+=n;msg=e.name+" gains "+n+" Block."}
- else{e.buff+=n;msg=e.name+" sharpens their power!"}
+  attackFx("enemy",kind==="bleed"?"stab":kind==="shoot"?"arrow":kind==="spell"?"magic":kind==="multi"?"double":"slash");
+  if(kind==="multi"){hurt=damagePlayer(n);if(s.mode!=="lost")hurt+=damagePlayer(n)}
+  else hurt=damagePlayer(n);
+  msg=e.name+" uses "+({"attack":"Sword Swing","bleed":"Bleeding Stab","shoot":"Arrow Shot","spell":"Spell Blast","multi":"Double Strike"}[kind])+" · "+hurt+" damage"+(kind==="multi"?" over two hits":"")+".";
+  if(kind==="bleed"&&hurt>0){s.bleed+=2;msg+=" Bleed +2."}
+ }else if(kind==="defend"){attackFx("enemy","block");e.block+=n;msg=e.name+" RAISES SHIELD and gains "+n+" Block."}
+ else{attackFx("enemy","magic");e.buff+=n;msg=e.name+" EMPOWERS and gains +"+n+" future damage!"}
  e.midx++;if(e.weak>0)e.weak--;if(e.exposed>0)e.exposed--;
  if(s.mode!=="lost"){
-  if(s.bleed>0){var dot=s.bleed;s.hp=Math.max(0,s.hp-dot);s.bleed--;msg+=" Bleed costs "+dot+" HP.";if(s.hp===0)s.mode="lost"}
+  if(s.bleed>0){var dot=s.bleed;s.hp=Math.max(0,s.hp-dot);s.bleed--;msg+=" Bleed costs "+dot+" HP.";if(s.hp<=0)s.mode="lost"}
   if(s.weak>0)s.weak--;
   s.turn++;s.block=has("clasp")?3:0;s.energy=3;drawCards(5);s.log=msg;
- }else{s.log=msg}
- sound(180);render();save()
+ }else s.log=msg;
+ sound(kind==="shoot"?420:kind==="spell"?640:180);render();save()
 }
-function nextFloor(){s.floor++;startFloor()}
-function chooseReward(key){if(s.mode!=="reward")return;if(key!=="skip"&&Card[key])s.deck.push(key);modalState="";nextFloor()}
-function camp(action){if(s.mode!=="camp")return;if(action==="heal"){hpAdd(20)}else if(action==="upgrade"){var choices=s.deck.filter(function(k){return !up(k)});if(choices.length){var chosen=choices[rand(choices.length)],i=s.deck.indexOf(chosen);s.deck[i]=chosen+"+";s.log=Card[chosen].name+" improved!"}else{hpAdd(12)}}nextFloor()}
-function reset(){modalState="";s=initial();startFloor()}
+function collectFragment(){
+ if([2,4,6,8,10].indexOf(s.floor)>=0&&s.fragmentFloors.indexOf(s.floor)<0){
+  s.fragmentFloors.push(s.floor);s.fragments=Math.min(5,s.fragments+1);
+  s.log="You recover Master Loot fragment "+s.fragments+"/5. The ring stirs.";
+  return " 🗝️ MASTER LOOT "+s.fragments+"/5."
+ }
+ return ""
+}
+function enterMap(){
+ var newFragment=collectFragment();s.mode="map";s.enemy=null;
+ s.roomChoices=(RoomMenu[s.floor+1]||["boss"]).slice();
+ s.dialogue="The ring weighs on your finger. Three paths wind higher."+newFragment;
+ render();save()
+}
+function nextFloor(kind){
+ if(s.mode!=="map")return;
+ if(s.roomChoices.indexOf(kind)<0)return;
+ s.nextKind=kind;s.floor++;startFloor()
+}
+function chooseReward(key){
+ if(s.mode!=="reward")return;
+ if(key!=="skip"&&Card[key])s.deck.push(key);
+ s.log=key==="skip"?"You leave the cards behind.":"Added "+Card[key].name+" to your deck.";
+ enterMap()
+}
+function camp(action){
+ if(s.mode!=="camp")return;
+ if(action==="heal"){hpAdd(20);s.log="You mend your wounds by the fire."}
+ else if(action==="upgrade"){var choices=s.deck.filter(function(k){return !up(k)});if(choices.length){var chosen=choices[rand(choices.length)],i=s.deck.indexOf(chosen);s.deck[i]=chosen+"+";s.log=Card[chosen].name+" improved."}else{hpAdd(12);s.log="All cards improved already; you heal instead."}}
+ else if(action==="study"){s.stats.lor++;s.log="An old knight teaches you something of the tower. Lore +1."}
+ else return;
+ enterMap()
+}
+function check(stat,dc){
+ var roll=1+rand(20),bonus=s.stats[stat]+(stat==="cun"?(has("dice")?2:0)+(has("lockpick")?2:0):stat==="grt"?(has("spider")?2:0):(has("chapel")?2:0));
+ return {roll:roll,total:roll+bonus,success:roll===20||(roll!==1&&roll+bonus>=dc)}
+}
+function gainCard(){
+ var pool=Object.keys(Card).filter(function(k){return k!=="strike"&&k!=="guard"}),chosen=pool[rand(pool.length)];
+ s.deck.push(chosen);return Card[chosen].name
+}
+function chooseEvent(index){
+ if(s.mode!=="event"||s.roomResolved)return;
+ var ev=Events[s.eventId],opt=ev&&ev.opts[index];if(!opt)return;s.roomResolved=true;
+ var kind=opt[1],result="",checkText="";
+ if(kind==="leave"){result="You keep moving. Sometimes survival means refusing a bargain."}
+ else if(kind==="sacrifice"){
+  if(s.hp<=7){s.roomResolved=false;toast("NOT ENOUGH HP");return}
+  s.hp-=7;result="You sacrifice 7 HP and claim "+randomRelic()+".";
+ }else if(kind==="ring"){
+  var roll=rand(3);
+  if(roll===0){s.gold+=25;result="The cursed ring picks the lock. +25 gold."}
+  else if(roll===1){result="The ring slips through the lock. "+randomRelic()+"."}
+  else {s.hp=Math.max(1,s.hp-5);result="The ring demands blood. Lose up to 5 HP."}
+ }else if(kind==="sell"){s.gold+=18;result="A hooded buyer pays 18 gold for the forbidden book."}
+ else {
+  var roll=check(kind,opt[2]);checkText="🎲 d20 "+roll.roll+" + bonus = "+roll.total+" vs DC "+opt[2]+". ";
+  if(roll.success){
+   if(s.eventId==="prisoner"){s.stats.cun++;result="The prisoner reveals a hidden route. Cunning +1."}
+   else if(s.eventId==="chapel"){hpAdd(10);s.stats.lor++;result="The chapel grants 10 healing and Lore +1."}
+   else if(s.eventId==="tome"){result="You copy a spell: "+gainCard()+" added to deck."}
+   else if(s.eventId==="bell"){s.gold+=22;result="You slip past the patrol and find 22 gold."}
+   else if(s.eventId==="mirror"){result="The reflection lets go: "+randomRelic()+"."}
+   else if(s.eventId==="reliquary"){result="The lock opens: "+randomRelic()+"."}
+   else{s.gold+=20;result="You beat the goblin's loaded dice and collect 20 gold."}
+  }else{
+   var damage=Math.min(s.hp-1,4+rand(5));
+   s.hp-=damage;result="The check fails. The tower takes "+damage+" HP.";
+   if(s.eventId==="dice"){s.gold+=5;result+=" The goblin pays 5 gold for trying."}
+  }
+ }
+ s.log=checkText+result;s.history.push({floor:s.floor,event:s.eventId,choice:opt[0],outcome:s.log});
+ enterMap()
+}
+function treasure(action){
+ if(s.mode!=="treasure"||s.roomResolved)return;
+ if(["lock","smash","leave"].indexOf(action)<0)return;
+ s.roomResolved=true;var msg="";
+ if(action==="leave")msg="You leave the chest untouched. No second chances and no regrets.";
+ else{
+  var result=check(action==="lock"?"cun":"grt",action==="lock"?11:13);
+  if(result.success){var g=20+s.floor*4;s.gold+=g;msg="🎲 "+result.total+" · The coffer opens. +"+g+" gold and "+randomRelic()+"."}
+  else{var hit=Math.min(s.hp-1,8);s.hp-=hit;msg="🎲 "+result.total+" · The chest trap snaps! Lose "+hit+" HP. No loot."}
+ }
+ s.log=msg;s.history.push({floor:s.floor,event:"chest",choice:action,outcome:msg});enterMap()
+}
+function merchant(action){
+ if(s.mode!=="merchant"||!s.shopStock)return;
+ var stock=s.shopStock,price;
+ if(action==="leave"){s.log="The merchant waves goodbye, counting coins you no longer have.";enterMap();return}
+ if(action==="potion"){price=12;if(stock.potionBought||s.gold<price)return;s.gold-=price;s.potions++;stock.potionBought=true;s.log="Bought one healing potion for 12 gold."}
+ else if(action==="card"){price=20;if(stock.cardBought||s.gold<price)return;s.gold-=price;s.deck.push(stock.card);stock.cardBought=true;s.log="Bought "+Card[stock.card].name+" for 20 gold."}
+ else if(action==="relic"){price=55;if(stock.relicBought||s.gold<price||!stock.relic)return;s.gold-=price;getRelic(stock.relic);stock.relicBought=true;s.log="Bought "+Relic[stock.relic].name+" for 55 gold."}
+ else return;
+ s.dialogue="“A pleasure. My inventory stays sold when it's sold.”";sound(570);render();save()
+}
+function beginOrigin(kind){
+ if(s.mode!=="origin")return;
+ s.origin=kind;
+ if(kind==="cutpurse"){s.stats={cun:3,grt:1,lor:1};s.deck.push("pickpocket")}
+ else if(kind==="shadow"){s.stats={cun:2,grt:2,lor:1};s.deck.push("evade")}
+ else if(kind==="charlatan"){s.stats={cun:2,grt:1,lor:3};s.deck.push("flash")}
+ else return;
+ s.log="You chose the "+kind+". The Thief's Ring is yours, but you are not its master.";
+ startFloor()
+}
+function reset(){modalState="";s=initial();render();save()}
+
 function statuses(who){var e=who==="enemy"?s.enemy:s;if(!e)return "";var arr=[];if(e.bleed>0)arr.push("🩸 "+e.bleed);if(e.weak>0)arr.push("💫 Weak "+e.weak);if(e.exposed>0)arr.push("🎯 Exposed "+e.exposed);if(e.buff>0)arr.push("⬆ "+e.buff);return arr.length?arr.map(function(v){return '<span class="status">'+v+"</span>"}).join(""):'<span class="status" style="opacity:.5">NO EFFECTS</span>'}
 function renderCards(){var box=id("hand");box.innerHTML="";if(s.mode!=="battle"){box.innerHTML='<div style="padding:35px;color:#a3bcb2;font:italic 16px Georgia">Your cards will return when the next battle begins…</div>';return}
  s.hand.forEach(function(key,i){var c=Card[cardKey(key)];if(!c)return;var el=document.createElement("button");el.className="card "+c.type+(s.energy<c.cost?" off":"");el.setAttribute("aria-label",c.name+", "+c.cost+" energy");el.innerHTML='<span class="cost">'+c.cost+'</span>'+(up(key)?'<span class="up">★</span>':"")+'<span class="glyph">'+c.icon+'</span><span class="title">'+c.name+'</span><span class="desc">'+(up(key)?"★ Upgraded · ":"")+c.desc+'</span><span class="type">'+c.type.toUpperCase()+'</span>';el.addEventListener("click",function(){playCard(i)});box.appendChild(el)})
