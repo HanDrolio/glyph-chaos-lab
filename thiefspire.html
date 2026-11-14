@@ -991,10 +991,30 @@ function attackFx(side,type){
  var player=side==="player",attacker=id(player?"player-side":"enemy-side"),
  target=id(player?"enemy-side":"player-side"),arena=id("game"),
  layer=id("battlefx"),div=document.createElement("div"),decor="",defense=type==="block"||type==="heal"||type==="buff";
+ // Each class and enemy gets a distinct attack cue, in addition to the card effect.
+ var kind=player?(s.origin||"cutpurse"):(s.enemy?s.enemy.id:"guard"),channel=player?"player":"enemy";
+ visualAction[channel]={kind:type,until:Date.now()+760};
+ var signature={
+  cutpurse:{glyph:"⚔",color:"gold"},shadow:{glyph:"✦",color:"purple"},charlatan:{glyph:"✺",color:"purple"},
+  jailer:{glyph:"⛓",color:"gold"},knight:{glyph:"⚔",color:"gold"},guard:{glyph:"⚔",color:"gold"},
+  captain:{glyph:"✦",color:"purple"},castellan:{glyph:"⚔",color:"gold"},warden:{glyph:"✷",color:"gold"},
+  archer:{glyph:"➶",color:"gold"},skeleton:{glyph:"⟡",color:"gold"},rat:{glyph:"╳",color:"fire"},
+  goblin:{glyph:"✦",color:"gold"},imp:{glyph:"✦",color:"fire"},ogre:{glyph:"✹",color:"fire"},
+  mimic:{glyph:"✸",color:"toxic"},monk:{glyph:"☣",color:"toxic"},mage:{glyph:"✺",color:"purple"},
+  cultist:{glyph:"✦",color:"fire"},wraith:{glyph:"✷",color:"purple"},slime:{glyph:"✶",color:"toxic"}
+ };
+ var emblem=signature[kind]||{glyph:"✦",color:"gold"};
+
  try{
   attacker.classList.remove("lunge","blocking");
-  if(!defense&&type!=="arrow"&&type!=="magic")attacker.classList.add("lunge");
-  else if(defense)attacker.classList.add("blocking");
+  // Character-specific CSS motions apply even to bows, spells and thrown potions.
+  if(!defense)attacker.classList.add("lunge");
+  else attacker.classList.add("blocking");
+  var glyphEffect=document.createElement("span");
+  glyphEffect.className="fx-character "+emblem.color+(!player?" enemy":"");
+  glyphEffect.textContent=defense?(type==="heal"?"✚":type==="block"?"◈":"✧"):emblem.glyph;
+  layer.appendChild(glyphEffect);
+  setTimeout(function(){glyphEffect.remove()},730);
   div.className=(type==="slash"||type==="stab"||type==="double")?"fx-slash "+(!player?"enemy ":"")+(type==="double"?"double":""):
     type==="arrow"?"fx-arrow "+(player?"player":""):
     type==="magic"?"fx-magic "+(player?"player":""):
@@ -1008,7 +1028,7 @@ function attackFx(side,type){
    var spark=document.createElement("div");spark.className="fx-spark";if(!player)spark.style.left="25%";layer.appendChild(spark);setTimeout(function(){spark.remove()},530);
    setTimeout(function(){target.classList.add("hit");if(type==="slash"||type==="double"||type==="stab")arena.classList.add("shaking")},170)
   }
-  setTimeout(function(){div.remove();attacker.classList.remove("lunge","blocking");target.classList.remove("hit");arena.classList.remove("shaking")},650)
+  setTimeout(function(){div.remove();attacker.classList.remove("lunge","blocking");target.classList.remove("hit");arena.classList.remove("shaking")},750)
  }catch(e){}
 }
 function drawBackdrop(t){
@@ -1157,7 +1177,15 @@ function drawBackdrop(t){
   R(dx,dy,1+z%2,1+z%2,z%4===0?"#ffe4a49a":"#d8e4ce66")
  }
 }
-if(typeof setInterval==="function")setInterval(function(){if(typeof document==="undefined"||!document.hidden)drawBackdrop(Date.now())},185);
+if(typeof setInterval==="function")setInterval(function(){
+ if(typeof document!=="undefined"&&document.hidden)return;
+ chibiFrame++;
+ drawBackdrop(Date.now());
+ if(typeof s==="object"&&s){
+  sprite(id("thief-sprite"),s.origin||"cutpurse");
+  if(s.enemy)sprite(id("enemy-sprite"),s.enemy.id)
+ }
+},160);
 
 
 /* ART SYSTEM v4: all-original 64x64 chibi character illustrations.
