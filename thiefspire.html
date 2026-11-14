@@ -400,9 +400,9 @@ function floatOn(side,text,cls){var wrap=id(side==="enemy"?"enemy-side":"player-
 function toast(txt){var el=id("toast");el.textContent=txt;el.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(function(){el.classList.remove("show")},950)}
 function hurtEnemy(n,ignoreBlock){var e=s.enemy,d=Math.max(0,n+(has("rune")?2:0)+(has("blade")&&!s.firstAttack?3:0));s.firstAttack=true;if(s.weak>0)d=Math.ceil(d*.75);if(e.exposed>0)d=Math.ceil(d*1.5);var b=ignoreBlock?0:Math.min(e.block,d);e.block-=b;var final=Math.max(0,d-b);e.hp=Math.max(0,e.hp-final);floatOn("enemy","-"+final,"red");if(has("fang"))e.bleed++;return final}
 function gainBlock(n){s.block+=n;floatOn("player","🛡 +"+n,"green")}
-function damagePlayer(n){var d=Math.max(0,n);if(s.maskReady&&d>0){d=Math.max(0,d-3);s.maskReady=false}var blocked=Math.min(s.block,d);s.block-=blocked;d-=blocked;s.hp=Math.max(0,s.hp-d);floatOn("player","-"+d,"red");if(s.hp<=0){s.mode="lost";s.log="The tower claims another thief."}return d}
+function damagePlayer(n,fromEnemy){var d=Math.max(0,n);if(fromEnemy&&s.maskReady&&d>0){d=Math.max(0,d-3);s.maskReady=false}var blocked=Math.min(s.block,d);s.block-=blocked;d-=blocked;s.hp=Math.max(0,s.hp-d);floatOn("player","-"+d,"red");if(s.hp<=0){s.mode="lost";s.log="The tower claims another thief."}return d}
 
-function attackPlayer(n){return damagePlayer(n)}
+function attackPlayer(n){return damagePlayer(n,true)}
 function useRing(){
  if(s.mode!=="battle"||s.ringUsed)return;
  s.ringUsed=true;var roll=rand(5),e=s.enemy,msg="";
@@ -494,8 +494,8 @@ function endTurn(){
  if(["attack","bleed","shoot","spell","multi"].indexOf(kind)>=0){
   if(e.weak>0)n=Math.ceil(n*.75);
   attackFx("enemy",kind==="bleed"?"stab":kind==="shoot"?"arrow":kind==="spell"?"magic":kind==="multi"?"double":"slash");
-  if(kind==="multi"){hurt=damagePlayer(n);if(s.mode!=="lost")hurt+=damagePlayer(n)}
-  else hurt=damagePlayer(n);
+  if(kind==="multi"){hurt=damagePlayer(n,true);if(s.mode!=="lost")hurt+=damagePlayer(n,true)}
+  else hurt=damagePlayer(n,true);
   msg=e.name+" uses "+({"attack":"Sword Swing","bleed":"Bleeding Stab","shoot":"Arrow Shot","spell":"Spell Blast","multi":"Double Strike"}[kind])+" · "+hurt+" damage"+(kind==="multi"?" over two hits":"")+".";
   if(kind==="bleed"&&hurt>0){s.bleed+=2;msg+=" Bleed +2."}
  }else if(kind==="defend"){attackFx("enemy","block");e.block+=n;msg=e.name+" RAISES SHIELD and gains "+n+" Block."}
