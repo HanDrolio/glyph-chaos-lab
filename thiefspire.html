@@ -180,6 +180,14 @@ canvas.sprite{width:min(95%,112px);max-height:min(100%,155px);filter:drop-shadow
 #modal.show.combat-result{animation:portal-enter .5s both .23s}
 @keyframes portal-enter{0%{opacity:0}100%{opacity:1}}
 @media(max-width:355px){.handhead{grid-template-columns:minmax(65px,1fr) 32px 43px auto;gap:4px;padding:0 7px 7px}.energy{font-size:10px}.energy strong{font-size:17px}#ringbutton{min-width:32px}#potion{min-width:43px}#endturn{min-width:79px;font-size:10px;padding:8px 5px}.stat-pill{font-size:8px}}
+
+/* Player feedback: a card arcs into combat; relics flare; defeated foes fall. */
+.card-ghost{position:absolute;z-index:19;left:50%;bottom:clamp(175px,27dvh,247px);font-size:39px;pointer-events:none;text-shadow:0 0 11px #f2ce89,0 0 25px #f7af96;animation:card-launch .68s cubic-bezier(.25,.75,.3,1) forwards}
+@keyframes card-launch{0%{opacity:1;transform:translate(-50%,0) rotate(-18deg) scale(.8)}50%{opacity:1;transform:translate(-50%,-62px) rotate(-4deg) scale(1.2)}100%{opacity:0;transform:translate(10px,-160px) rotate(21deg) scale(.4)}}
+.relic.triggered{animation:relic-trigger .58s ease-out}
+@keyframes relic-trigger{0%,100%{box-shadow:inset 0 -2px #121a20;transform:scale(1)}40%{box-shadow:0 0 12px 4px #f9db7b,0 0 28px #edd49b;transform:scale(1.24)}}
+#enemy-side.dead canvas.sprite{animation:fx-fall .6s steps(6,end) forwards!important}
+#player-side.dead canvas.sprite{animation:fx-fall .6s steps(6,end) forwards!important}
 </style>
 </head>
 <body>
@@ -362,7 +370,7 @@ function pickEnemy(){
  return pool[rand(pool.length)]
 }
 function startFloor(){
- modalState="";
+ modalState="";id("enemy-side").classList.remove("dead");id("player-side").classList.remove("dead");
  var kind=s.floor===12?"boss":(s.nextKind||"battle");
  s.roomId=kind;s.nextKind=null;s.roomResolved=false;s.enemy=null;s.elite=kind==="elite";
  s.ringUsed=false;s.ringRoomUsed=false;s.stolenThisFight=false;s.firstAttack=false;s.maskReady=has("mask");
@@ -398,9 +406,9 @@ function moveLabel(){return intentInfo().name}
 function sound(freq){if(!soundOn)return;try{var C=window.AudioContext||window.webkitAudioContext;audioCtx=audioCtx||new C();if(audioCtx.state==="suspended")audioCtx.resume();var o=audioCtx.createOscillator(),g=audioCtx.createGain(),t=audioCtx.currentTime;o.type="triangle";o.frequency.setValueAtTime(freq,t);o.frequency.exponentialRampToValueAtTime(Math.max(50,freq*.6),t+.1);g.gain.setValueAtTime(.11,t);g.gain.exponentialRampToValueAtTime(.0001,t+.14);o.connect(g);g.connect(audioCtx.destination);o.start(t);o.stop(t+.15)}catch(e){}}
 function floatOn(side,text,cls){var wrap=id(side==="enemy"?"enemy-side":"player-side"),el=document.createElement("b");el.className="float "+(cls||"");el.textContent=text;wrap.appendChild(el);setTimeout(function(){el.remove()},780)}
 function toast(txt){var el=id("toast");el.textContent=txt;el.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(function(){el.classList.remove("show")},950)}
-function hurtEnemy(n,ignoreBlock){var e=s.enemy,d=Math.max(0,n+(has("rune")?2:0)+(has("blade")&&!s.firstAttack?3:0));s.firstAttack=true;if(s.weak>0)d=Math.ceil(d*.75);if(e.exposed>0)d=Math.ceil(d*1.5);var b=ignoreBlock?0:Math.min(e.block,d);e.block-=b;var final=Math.max(0,d-b);e.hp=Math.max(0,e.hp-final);floatOn("enemy","-"+final,"red");if(has("fang"))e.bleed++;return final}
+function hurtEnemy(n,ignoreBlock){var e=s.enemy,firstHit=!s.firstAttack,d=Math.max(0,n+(has("rune")?2:0)+(has("blade")&&!s.firstAttack?3:0));s.firstAttack=true;if(firstHit&&has("blade"))relicPulse("blade");if(has("rune"))relicPulse("rune");if(s.weak>0)d=Math.ceil(d*.75);if(e.exposed>0)d=Math.ceil(d*1.5);var b=ignoreBlock?0:Math.min(e.block,d);e.block-=b;var final=Math.max(0,d-b);e.hp=Math.max(0,e.hp-final);floatOn("enemy","-"+final,"red");if(has("fang")){e.bleed++;relicPulse("fang")}return final}
 function gainBlock(n){s.block+=n;floatOn("player","🛡 +"+n,"green")}
-function damagePlayer(n,fromEnemy){var d=Math.max(0,n);if(fromEnemy&&s.maskReady&&d>0){d=Math.max(0,d-3);s.maskReady=false}var blocked=Math.min(s.block,d);s.block-=blocked;d-=blocked;s.hp=Math.max(0,s.hp-d);floatOn("player","-"+d,"red");if(s.hp<=0){s.mode="lost";s.log="The tower claims another thief."}return d}
+function damagePlayer(n,fromEnemy){var d=Math.max(0,n);if(fromEnemy&&s.maskReady&&d>0){d=Math.max(0,d-3);s.maskReady=false;relicPulse("mask")}var blocked=Math.min(s.block,d);s.block-=blocked;d-=blocked;s.hp=Math.max(0,s.hp-d);floatOn("player","-"+d,"red");if(s.hp<=0){s.mode="lost";s.log="The tower claims another thief.";id("player-side").classList.add("dead")}return d}
 
 function attackPlayer(n){return damagePlayer(n,true)}
 function useRing(){
@@ -422,7 +430,7 @@ function playCard(index){
  if(s.mode!=="battle"||modalState)return;
  var key=s.hand[index];if(!key)return;var c=Card[cardKey(key)];if(!c)return;
  if(s.energy<c.cost){toast("NOT ENOUGH ENERGY");sound(130);return}
- s.energy-=c.cost;s.hand.splice(index,1);s.discard.push(key);
+ s.energy-=c.cost;s.hand.splice(index,1);s.discard.push(key);cardLaunch(c);
  var e=s.enemy,note=c.name,fx="magic",type=cardKey(key);
  if(c.type==="attack")fx="slash";
  if(type==="double"||type==="quick")fx="double";
@@ -474,8 +482,8 @@ function randomRelic(){
  return Relic[r].icon+" "+Relic[r].name
 }
 function winEncounter(){
- s.wins++;var gain=10+rand(10)+s.floor*2+(s.elite?25:0);
- s.gold+=gain;if(has("heart"))hpAdd(5);
+ s.wins++;id("enemy-side").classList.add("dead");var gain=10+rand(10)+s.floor*2+(s.elite?25:0);
+ s.gold+=gain;if(has("heart")){hpAdd(5);relicPulse("heart")}
  s.lootText="🪙 +"+gain+" gold"+(has("heart")?" · 💚 +5 HP":"");
  if(s.floor===12){s.mode="won";s.gold+=100;s.log="The Golden Warden falls. The vault doors open.";s.dialogue="“You may keep the gold,” sighs the Thief's Ring. “I kept the stories.”";sound(780);return}
  if(s.elite||[3,7,11].indexOf(s.floor)>=0){s.lootText+=" · "+randomRelic()}
@@ -699,7 +707,7 @@ function render(){
  id("gold").textContent="🪙 "+s.gold+" GOLD";
  id("fragments").textContent=s.fragments+"/5";
  id("stats").textContent="CUN "+s.stats.cun+" · GRT "+s.stats.grt+" · LOR "+s.stats.lor;
- id("relics").innerHTML=s.relics.length?s.relics.map(function(r){return '<span class="relic" title="'+Relic[r].name+'">'+Relic[r].icon+"</span>"}).join(""):'<span class="empty-relic">Nothing stolen yet</span>';
+ id("relics").innerHTML=s.relics.length?s.relics.map(function(r){return '<span class="relic" data-relic="'+r+'" title="'+Relic[r].name+'">'+Relic[r].icon+"</span>"}).join(""):'<span class="empty-relic">Nothing stolen yet</span>';
  id("room").textContent=s.floor>=12?"THE GOLDEN VAULT":s.floor>=9?"THE IRON HEIGHTS":s.floor>=5?"THE INNER KEEP":"THE LOWER KEEP";
  id("encounter-name").textContent=s.mode==="origin"?"THE SLUMS":s.mode==="camp"?"REST CHAMBER":s.mode==="won"?"VAULT OPEN":"FLOOR "+String(s.floor).padStart(2,"0");
  id("npc-line").textContent=s.dialogue||"The ring grows colder.";
@@ -755,6 +763,14 @@ id("modal").addEventListener("click",function(ev){
    SWORD = lunge + diagonal slash; STAB = dash + bright thrust;
    DOUBLE = two slash trails; ARROW = traveling bolt;
    SPELL = glowing orb; BLOCK = shield flash; HEAL = green sparks. */
+
+function cardLaunch(card){
+ try{var ghost=document.createElement("span");ghost.className="card-ghost";ghost.textContent=card.icon;id("game").appendChild(ghost);setTimeout(function(){ghost.remove()},690)}catch(e){}
+}
+function relicPulse(which){
+ try{var parent=id("relics");if(!parent.querySelector)return;var slot=parent.querySelector('[data-relic="'+which+'"]');if(!slot)return;slot.classList.remove("triggered");void slot.offsetWidth;slot.classList.add("triggered");setTimeout(function(){slot.classList.remove("triggered")},620)}catch(e){}
+}
+
 function attackFx(side,type){
  var player=side==="player",attacker=id(player?"player-side":"enemy-side"),
  target=id(player?"enemy-side":"player-side"),arena=id("game"),
