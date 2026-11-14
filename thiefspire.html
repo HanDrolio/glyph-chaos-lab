@@ -874,7 +874,7 @@ function choice(icon,title,desc,action,disabled){
  return '<button class="choice" data-action="'+action+'"'+(disabled?' disabled aria-disabled="true"':'')+'><span class="icon">'+icon+'</span><span><strong>'+title+'</strong><small>'+desc+'</small></span></button>'
 }
 function renderRouteBoard(inspection){
- var act=Math.max(1,Math.min(3,mapViewAct||currentAct(s.floor+1))),begin=(act-1)*ACT_LENGTH+1,end=act*ACT_LENGTH;
+ var act=inspection?Math.max(1,Math.min(3,mapViewAct||currentAct(s.floor+1))):currentAct(s.floor+1),begin=(act-1)*ACT_LENGTH+1,end=act*ACT_LENGTH;
  var done=s.routeHistory||[],next=s.floor+1;
  var out=inspection?'<div class="act-tabs" role="group" aria-label="Select act">':'';
  if(inspection){for(var tab=1;tab<=3;tab++)out+='<button class="act-tab'+(tab===act?' active':'')+'" data-action="viewact:'+tab+'">ACT '+["I","II","III"][tab-1]+'</button>';out+='</div>'}
@@ -1578,7 +1578,7 @@ try{
   }
   if(s.mode==="origin"&&loaded.version===1)s.mode="battle";
   if(s.mode==="battle"&&!s.enemy)startFloor();
-  else if(s.mode==="map")s.roomChoices=(s.tower[s.floor+1]||[]).map(function(r){return r.kind});
+  else if(s.mode==="map"){s.roomChoices=(s.tower[s.floor+1]||[]).map(function(r){return r.kind});mapViewAct=currentAct(s.floor+1)}
   render();
  }else reset()
 }catch(e){s=initial();render();save()}
