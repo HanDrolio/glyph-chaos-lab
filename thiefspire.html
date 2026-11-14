@@ -730,6 +730,115 @@ id("modal").addEventListener("click",function(ev){
  if(action.indexOf("treasure:")===0){treasure(action.slice(9));return}
 });
 
+
+/* Distinct, readable motion language:
+   SWORD = lunge + diagonal slash; STAB = dash + bright thrust;
+   DOUBLE = two slash trails; ARROW = traveling bolt;
+   SPELL = glowing orb; BLOCK = shield flash; HEAL = green sparks. */
+function attackFx(side,type){
+ var player=side==="player",attacker=id(player?"player-side":"enemy-side"),
+ target=id(player?"enemy-side":"player-side"),arena=id("game"),
+ layer=id("battlefx"),div=document.createElement("div"),decor="",defense=type==="block"||type==="heal";
+ try{
+  attacker.classList.remove("lunge","blocking");
+  if(!defense&&type!=="arrow"&&type!=="magic")attacker.classList.add("lunge");
+  else if(defense)attacker.classList.add("blocking");
+  div.className=(type==="slash"||type==="stab"||type==="double")?"fx-slash "+(!player?"enemy ":"")+(type==="double"?"double":""):
+    type==="arrow"?"fx-arrow "+(player?"player":""):
+    type==="magic"?"fx-magic "+(player?"player":""):
+    "fx-puff "+(player?"player":"");
+  if(type==="stab"){div.style.height="3px";div.style.width="115px";div.style.transform="rotate(-8deg)"}
+  if(type==="block")div.textContent="🛡️";
+  if(type==="heal")div.textContent="💚";
+  layer.appendChild(div);
+  if(!defense){
+   var spark=document.createElement("div");spark.className="fx-spark";if(!player)spark.style.left="25%";layer.appendChild(spark);setTimeout(function(){spark.remove()},530);
+   setTimeout(function(){target.classList.add("hit");if(type==="slash"||type==="double"||type==="stab")arena.classList.add("shaking")},170)
+  }
+  setTimeout(function(){div.remove();attacker.classList.remove("lunge","blocking");target.classList.remove("hit");arena.classList.remove("shaking")},650)
+ }catch(e){}
+}
+function drawBackdrop(t){
+ var canvas=id("backdrop"),c=canvas.getContext("2d");if(!c)return;
+ c.imageSmoothingEnabled=false;
+ var zone=s.floor>=12?3:s.floor>=9?2:s.floor>=5?1:0;
+ var palettes=[
+ ["#111f29","#243741","#354b4b","#405653","#1b2e36","#8c8668"],
+ ["#131f26","#2a3b37","#435341","#455947","#1b2e28","#a59a66"],
+ ["#111d30","#243449","#39465b","#47566b","#172239","#bbc4c5"],
+ ["#1b1730","#373048","#524365","#614c68","#241b35","#d7b179"]
+ ];
+ var p=palettes[zone],mode=s.mode;
+ function R(x,y,w,hh,color){c.fillStyle=color;c.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(hh))}
+ function L(x,y,x2,y2,color,w){c.strokeStyle=color;c.lineWidth=w||1;c.beginPath();c.moveTo(x,y);c.lineTo(x2,y2);c.stroke()}
+ R(0,0,320,220,p[0]);R(0,0,320,155,p[1]);
+ // Castled wall and staggered masonry.
+ for(var row=0;row<9;row++){
+  for(var col=0;col<11;col++){
+   var x=col*34-(row%2)*17,y=8+row*18;
+   R(x+1,y+1,31,15,(row+col)%4===0?p[3]:(row*7+col)%3===0?p[2]:p[1]);
+   R(x+2,y+2,27,1,"#7f948047")
+  }
+ }
+ // Distant stair / arched gateway behind the duel.
+ R(124,38,72,123,"#111a26");
+ R(116,65,88,96,"#16242d");
+ R(124,40,72,125,p[5]);R(128,44,64,121,"#0e1925");
+ R(136,30,48,119,"#111a23");R(141,27,38,125,"#101d28");
+ R(148,22,24,130,"#0a1720");
+ for(var i=0;i<5;i++){R(141,81+i*14,38,2,"#60706a55")}
+ // Windows and their distinct zone lighting.
+ var glass=zone===3?"#d49b77":zone===2?"#90a5c3":zone===1?"#75998e":"#87acac";
+ [68,233].forEach(function(wx){
+  R(wx-11,54,22,68,p[0]);R(wx-8,54,16,59,glass);R(wx-6,57,12,53,"#264954");
+  R(wx-1,55,3,58,p[0]);R(wx-8,85,16,3,p[0]);
+  R(wx-9,111,19,10,p[5]);R(wx-11,119,23,4,"#15212b")
+ });
+ // Giant stone uprights, banner and ironwork.
+ [22,291].forEach(function(x){R(x-12,6,26,153,p[0]);R(x-9,10,19,142,p[2]);R(x-5,14,5,133,p[3]);R(x-15,18,32,9,p[5]);R(x-16,146,34,11,p[0])});
+ R(110,6,101,12,p[0]);R(120,18,83,7,p[2]);
+ R(106,0,7,37,p[0]);R(204,0,7,37,p[0]);
+ // Banner panels on middle heights.
+ if(zone>=1){R(93,26,14,47,zone===3?"#96565b":"#567066");R(93,69,14,4,p[5]);R(213,26,14,47,zone===3?"#96565b":"#567066");R(213,69,14,4,p[5])}
+ // Torches, flames and flickering glints.
+ [40,282].forEach(function(x,j){
+  var flame=Math.sin((t||0)/140+j*2)*3,fy=53+flame;
+  R(x-6,80,13,5,"#111b23");R(x-2,66,5,14,"#9a8459");R(x-4,70,9,5,"#d4b975");
+  R(x-6,fy,13,15,"#b85f42");R(x-3,fy-7,7,17,"#e9a65d");R(x-1,fy-11,3,17,"#ffe8a4");
+  R(x-11,88,23,2,"#ffd27d25");
+ });
+ // Main stone promenade, deep grid / perspective.
+ R(0,157,320,63,p[0]);R(0,158,320,5,p[3]);
+ for(var k=0;k<6;k++){var yy=168+k*11;R(0,yy,320,2,"#75897a54")}
+ for(var l=-6;l<14;l++){L(160,158,l*44,220,"#455a57a0",1)}
+ R(0,210,320,10,"#0b1922");
+ // Interactive room dressing.
+ if(mode==="merchant"){
+  R(200,115,91,43,"#473b39");R(192,111,106,12,"#8a5a56");R(195,119,100,4,"#d2a57a");
+  for(var a=0;a<4;a++){R(210+a*20,98-(a%2)*5,9,15,["#ba8490","#88a5ba","#b2a06a","#799a8b"][a]);R(211+a*20,95-(a%2)*5,7,4,"#f4d3ac")}
+  R(217,130,62,12,"#54463b");R(241,134,13,7,"#f8ca67");
+ }else if(mode==="treasure"){
+  R(192,129,84,39,"#694f44");R(189,121,91,14,"#98704f");R(196,117,76,9,"#baa479");
+  R(199,137,7,29,"#deb771");R(264,137,7,29,"#deb771");R(233,132,13,23,"#dfc777");R(239,138,3,12,"#73563b");
+ }else if(mode==="camp"){
+  R(145,145,24,16,"#574a43");R(137,155,43,8,"#9b6d4d");
+  R(148,137,13,21,"#ce673e");R(151,130+Math.sin(t/200)*2,7,21,"#f9bf65");R(154,127+Math.sin(t/180)*2,3,22,"#fff3ae");
+ }else if(mode==="event"){
+  R(192,139,77,17,"#6d6173");R(199,123,63,19,"#4c4554");R(221,95,21,30,"#8a6b89");R(226,84,10,17,"#e4c0a3")
+ }else if(mode==="origin"){
+  R(218,145,82,14,"#25373b");R(226,138,66,7,"#3e5a57")
+ }else if(zone===3){
+  R(218,123,88,30,"#a18a5e");R(224,130,76,18,"#4d3c3e");
+  R(256,137,14,11,"#e2bd76");
+ }
+ // Dust / ember motes loop gracefully.
+ for(var z=0;z<13;z++){
+  var dx=(z*83+33)%310,dy=((z*37+(t||0)*(0.008+z%3*.004))%145);
+  R(dx,dy,1+z%2,1+z%2,z%4===0?"#ffe4a49a":"#d8e4ce66")
+ }
+}
+if(typeof setInterval==="function")setInterval(function(){if(typeof document==="undefined"||!document.hidden)drawBackdrop(Date.now())},185);
+
 function sprite(canvas,type){
  var c=canvas.getContext("2d");c.clearRect(0,0,64,64);c.imageSmoothingEnabled=false;
  function R(x,y,w,h,col){c.fillStyle=col;c.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h))}
