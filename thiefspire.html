@@ -564,6 +564,15 @@ function chooseEvent(index){
  s.log=checkText+result;s.history.push({floor:s.floor,event:s.eventId,choice:opt[0],outcome:s.log});
  enterMap()
 }
+function chooseEventCard(key){
+ if(s.mode!=="event"||s.roomResolved)return;
+ if(!s.deck.some(function(k){return cardKey(k)===key}))return;
+ if(key==="pickpocket"&&s.eventId==="prisoner"){s.roomResolved=true;s.gold+=12;s.log="Pickpocket (story): steal the jailer's key, free the prisoner, and earn 12 gold."}
+ else if(key==="smoke"&&s.eventId==="bell"){s.roomResolved=true;s.gold+=16;s.log="Smoke Bomb (story): cross the hall unseen and pocket 16 gold."}
+ else return;
+ s.history.push({floor:s.floor,event:s.eventId,choice:key,outcome:s.log});enterMap()
+}
+
 function treasure(action){
  if(s.mode!=="treasure"||s.roomResolved)return;
  if(["lock","smash","leave"].indexOf(action)<0)return;
@@ -665,32 +674,62 @@ function renderModal(){
  box.innerHTML=h
 }
 
+
 function render(){
  id("floor").textContent="FLOOR "+String(s.floor).padStart(2,"0")+" / 12";
  id("gold").textContent="🪙 "+s.gold+" GOLD";
+ id("fragments").textContent=s.fragments+"/5";
+ id("stats").textContent="CUN "+s.stats.cun+" · GRT "+s.stats.grt+" · LOR "+s.stats.lor;
  id("relics").innerHTML=s.relics.length?s.relics.map(function(r){return '<span class="relic" title="'+Relic[r].name+'">'+Relic[r].icon+"</span>"}).join(""):'<span class="empty-relic">Nothing stolen yet</span>';
  id("room").textContent=s.floor>=12?"THE GOLDEN VAULT":s.floor>=9?"THE IRON HEIGHTS":s.floor>=5?"THE INNER KEEP":"THE LOWER KEEP";
- id("encounter-name").textContent=s.mode==="camp"?"REST CHAMBER":s.mode==="won"?"VAULT OPEN":"ENCOUNTER "+String(s.floor).padStart(2,"0");
- id("player-hp").textContent=s.hp+" / "+s.maxHp+" HP";id("player-fill").style.width=(100*s.hp/s.maxHp)+"%";
+ id("encounter-name").textContent=s.mode==="origin"?"THE SLUMS":s.mode==="camp"?"REST CHAMBER":s.mode==="won"?"VAULT OPEN":"FLOOR "+String(s.floor).padStart(2,"0");
+ id("npc-line").textContent=s.dialogue||"The ring grows colder.";
+ id("player-hp").textContent=s.hp+" / "+s.maxHp+" HP";
+ id("player-fill").style.width=(100*s.hp/s.maxHp)+"%";
  id("player-block").textContent="🛡 "+s.block;id("player-status").innerHTML=statuses("player");
  var e=s.enemy;
- id("enemy-name").textContent=e?e.name:"NO ENEMY";
+ id("enemy-side").style.visibility=e?"visible":"hidden";
+ id("enemy-name").textContent=e?e.name:"THE TOWER";
  id("enemy-hp").textContent=e?e.hp+" / "+e.maxHp+" HP":"—";
  id("enemy-fill").style.width=e?(100*e.hp/e.maxHp)+"%":"0%";
  id("enemy-block").textContent="🛡 "+(e?e.block:0);
  id("enemy-status").innerHTML=statuses("enemy");
- id("intent").textContent=s.mode==="battle"?moveLabel():"✦ ENCOUNTER CLEARED";
+ var inf=intentInfo();id("intent").textContent=inf.name;id("intent").className="intent "+inf.cls;
+ id("intent-detail").textContent=inf.detail;
  id("energy").textContent=s.energy;
  id("deckinfo").textContent="DRAW "+s.draw.length+" · DISCARD "+s.discard.length;
+ id("ringbutton").disabled=s.mode!=="battle"||s.ringUsed;
+ id("ringbutton").title=s.ringUsed?"RING SPENT THIS BATTLE":"Use cursed ring once this battle";
+ id("potion").textContent="🧪 "+s.potions;
+ id("potion").disabled=s.potions<1||s.hp>=s.maxHp||s.mode==="lost"||s.mode==="won";
  id("endturn").disabled=s.mode!=="battle";
  id("battlelog").textContent=s.log;
  renderCards();renderModal();
- sprite(id("thief-sprite"),"thief");sprite(id("enemy-sprite"),e?e.id:"guard")
+ sprite(id("thief-sprite"),"thief");
+ sprite(id("enemy-sprite"),e?e.id:"guard");
+ if(typeof drawBackdrop==="function")drawBackdrop(Date.now())
 }
 id("endturn").addEventListener("click",endTurn);
+id("ringbutton").addEventListener("click",useRing);
+id("potion").addEventListener("click",drinkPotion);
 id("bag").addEventListener("click",function(){modalState="bag";renderModal()});
 id("sound").addEventListener("click",function(){soundOn=!soundOn;id("sound").textContent=soundOn?"♫":"♪";sound(520)});
-id("modal").addEventListener("click",function(ev){var btn=ev.target.closest("[data-action]");if(!btn)return;var action=btn.getAttribute("data-action");if(action==="close"){modalState="";renderModal();return}if(action==="new"){if(confirm("Start a fresh run? Current progress will be erased."))reset();return}if(action==="restart"){reset();return}if(action.indexOf("reward:")===0){chooseReward(action.slice(7));return}if(action.indexOf("camp:")===0){camp(action.slice(5));return}});
+id("modal").addEventListener("click",function(ev){
+ var btn=ev.target.closest("[data-action]");if(!btn||btn.disabled)return;
+ var action=btn.getAttribute("data-action");
+ if(action==="close"){modalState="";renderModal();return}
+ if(action==="new"){if(confirm("Start a fresh run? Current progress will be erased."))reset();return}
+ if(action==="restart"){reset();return}
+ if(action.indexOf("origin:")===0){beginOrigin(action.slice(7));return}
+ if(action.indexOf("reward:")===0){chooseReward(action.slice(7));return}
+ if(action.indexOf("room:")===0){nextFloor(action.slice(5));return}
+ if(action.indexOf("camp:")===0){camp(action.slice(5));return}
+ if(action.indexOf("event:")===0){chooseEvent(Number(action.slice(6)));return}
+ if(action.indexOf("eventcard:")===0){chooseEventCard(action.slice(10));return}
+ if(action.indexOf("shop:")===0){merchant(action.slice(5));return}
+ if(action.indexOf("treasure:")===0){treasure(action.slice(9));return}
+});
+
 function sprite(canvas,type){
  var c=canvas.getContext("2d");c.clearRect(0,0,64,64);c.imageSmoothingEnabled=false;
  function R(x,y,w,h,col){c.fillStyle=col;c.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h))}
@@ -781,7 +820,22 @@ function sprite(canvas,type){
  // shared glint for polished 8-bit feel
  R(52,13,2,2,"#d2d6b28c")
 }
-try{var loaded=JSON.parse(localStorage.getItem(KEY)||"null");if(loaded&&loaded.version===1&&loaded.deck&&loaded.hp>=0){s=loaded;if(s.mode==="battle"&&!s.enemy)startFloor();else render()}else reset()}catch(e){s=initial();startFloor()}
+try{
+ var loaded=JSON.parse(localStorage.getItem(KEY)||"null");
+ if(loaded&&loaded.deck&&typeof loaded.hp==="number"){
+  s=Object.assign(initial(),loaded);s.version=2;
+  s.stats=s.stats||{cun:2,grt:1,lor:1};
+  s.fragmentFloors=s.fragmentFloors||[];s.fragments=s.fragments||0;
+  s.potions=typeof s.potions==="number"?s.potions:2;
+  s.history=s.history||[];s.roomChoices=s.roomChoices||[];
+  s.dialogue=s.dialogue||"The ring remembers a previous heist.";
+  s.origin=s.origin||"cutpurse";s.ringUsed=!!s.ringUsed;
+  if(s.mode==="origin"&&loaded.version===1)s.mode="battle";
+  if(s.mode==="battle"&&!s.enemy)startFloor();
+  else if(s.mode==="map"&&!s.roomChoices.length)s.roomChoices=(RoomMenu[s.floor+1]||["boss"]).slice();
+  render();
+ }else reset()
+}catch(e){s=initial();render();save()}
 })();
 </script>
 </body></html>
