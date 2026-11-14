@@ -162,6 +162,24 @@ canvas.sprite{width:min(95%,112px);max-height:min(100%,155px);filter:drop-shadow
 @keyframes fx-pop{0%{opacity:0;transform:scale(.3)}30%{opacity:1;transform:scale(1.25)}100%{opacity:0;transform:scale(1.7)}}
 @media(max-height:680px){canvas.sprite{width:90px}#npc-line{padding:4px 7px;font-size:10px;margin-top:3px}#runline{padding-top:4px}.intent{min-height:26px}#hand{height:145px}}
 @media(prefers-reduced-motion:reduce){.sprite{animation:none!important}}
+
+/* Small-screen HUD: keep all combat controls visible on an iPhone. */
+#runline{flex-wrap:wrap;row-gap:4px}
+.handhead{display:grid;grid-template-columns:minmax(77px,1fr) 35px 48px auto;align-items:center;column-gap:6px;padding:0 10px 8px}
+.energy{font-size:11px;letter-spacing:-.025em}
+.energy strong{font-size:20px}
+.deckinfo{display:none}
+#ringbutton{padding:7px 3px;min-width:35px}
+#potion{padding:7px 3px;min-width:48px}
+#endturn{padding:8px 8px;font-size:11px;min-width:85px}
+#foot{font-size:10px;white-space:nowrap}
+.intent.attack{animation:intent-glow 2.2s ease-in-out infinite}
+.intent.cast{animation:spell-glow 2.6s ease-in-out infinite}
+@keyframes intent-glow{0%,100%{box-shadow:0 0 2px #cb5b4b66}50%{box-shadow:0 0 13px #f966657e}}
+@keyframes spell-glow{0%,100%{box-shadow:0 0 2px #9875ad66}50%{box-shadow:0 0 13px #aa7dff8c}}
+#modal.show.combat-result{animation:portal-enter .5s both .23s}
+@keyframes portal-enter{0%{opacity:0}100%{opacity:1}}
+@media(max-width:355px){.handhead{grid-template-columns:minmax(65px,1fr) 32px 43px auto;gap:4px;padding:0 7px 7px}.energy{font-size:10px}.energy strong{font-size:17px}#ringbutton{min-width:32px}#potion{min-width:43px}#endturn{min-width:79px;font-size:10px;padding:8px 5px}.stat-pill{font-size:8px}}
 </style>
 </head>
 <body>
@@ -358,7 +376,7 @@ function startFloor(){
  s.enemy={id:proto.id,name:proto.name,hp:proto.hp+scale*3,maxHp:proto.hp+scale*3,block:0,bleed:has("candle")?2:0,weak:0,exposed:0,midx:0,buff:0};
  s.mode="battle";s.block=has("clasp")?3:0;s.weak=0;s.bleed=0;s.turn=1;s.energy=3+(has("lantern")?1:0);
  s.draw=shuffle(s.deck.slice());s.discard=[];s.hand=[];drawCards(5+(has("watch")?1:0));
- var lines=Dialogues[proto.id]||["Steel answers steel."];s.dialogue=lines[rand(lines.length)];
+ var lines=Dialogues[proto.id]||["Steel answers steel."];s.dialogue=proto.id==="warden"?"The Golden Warden, called the Vault King in older tales, lifts a blade. “Every thief believes they are the first.”":lines[rand(lines.length)];
  s.log=(s.elite?"An elite champion guards the stair: ":"A hostile figure appears: ")+proto.name+".";
  render();save()
 }
@@ -380,9 +398,9 @@ function moveLabel(){return intentInfo().name}
 function sound(freq){if(!soundOn)return;try{var C=window.AudioContext||window.webkitAudioContext;audioCtx=audioCtx||new C();if(audioCtx.state==="suspended")audioCtx.resume();var o=audioCtx.createOscillator(),g=audioCtx.createGain(),t=audioCtx.currentTime;o.type="triangle";o.frequency.setValueAtTime(freq,t);o.frequency.exponentialRampToValueAtTime(Math.max(50,freq*.6),t+.1);g.gain.setValueAtTime(.11,t);g.gain.exponentialRampToValueAtTime(.0001,t+.14);o.connect(g);g.connect(audioCtx.destination);o.start(t);o.stop(t+.15)}catch(e){}}
 function floatOn(side,text,cls){var wrap=id(side==="enemy"?"enemy-side":"player-side"),el=document.createElement("b");el.className="float "+(cls||"");el.textContent=text;wrap.appendChild(el);setTimeout(function(){el.remove()},780)}
 function toast(txt){var el=id("toast");el.textContent=txt;el.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(function(){el.classList.remove("show")},950)}
-function hurtEnemy(n,ignoreBlock){var e=s.enemy,d=Math.max(0,n+(has("rune")?2:0));if(s.weak>0)d=Math.ceil(d*.75);if(e.exposed>0)d=Math.ceil(d*1.5);var b=ignoreBlock?0:Math.min(e.block,d);e.block-=b;var final=Math.max(0,d-b);e.hp=Math.max(0,e.hp-final);floatOn("enemy","-"+final,"red");if(has("fang"))e.bleed++;return final}
+function hurtEnemy(n,ignoreBlock){var e=s.enemy,d=Math.max(0,n+(has("rune")?2:0)+(has("blade")&&!s.firstAttack?3:0));s.firstAttack=true;if(s.weak>0)d=Math.ceil(d*.75);if(e.exposed>0)d=Math.ceil(d*1.5);var b=ignoreBlock?0:Math.min(e.block,d);e.block-=b;var final=Math.max(0,d-b);e.hp=Math.max(0,e.hp-final);floatOn("enemy","-"+final,"red");if(has("fang"))e.bleed++;return final}
 function gainBlock(n){s.block+=n;floatOn("player","🛡 +"+n,"green")}
-function damagePlayer(n){var d=Math.max(0,n);var blocked=Math.min(s.block,d);s.block-=blocked;d-=blocked;s.hp=Math.max(0,s.hp-d);floatOn("player","-"+d,"red");if(s.hp<=0){s.mode="lost";s.log="The tower claims another thief."}return d}
+function damagePlayer(n){var d=Math.max(0,n);if(s.maskReady&&d>0){d=Math.max(0,d-3);s.maskReady=false}var blocked=Math.min(s.block,d);s.block-=blocked;d-=blocked;s.hp=Math.max(0,s.hp-d);floatOn("player","-"+d,"red");if(s.hp<=0){s.mode="lost";s.log="The tower claims another thief."}return d}
 
 function attackPlayer(n){return damagePlayer(n)}
 function useRing(){
@@ -481,7 +499,7 @@ function endTurn(){
   msg=e.name+" uses "+({"attack":"Sword Swing","bleed":"Bleeding Stab","shoot":"Arrow Shot","spell":"Spell Blast","multi":"Double Strike"}[kind])+" · "+hurt+" damage"+(kind==="multi"?" over two hits":"")+".";
   if(kind==="bleed"&&hurt>0){s.bleed+=2;msg+=" Bleed +2."}
  }else if(kind==="defend"){attackFx("enemy","block");e.block+=n;msg=e.name+" RAISES SHIELD and gains "+n+" Block."}
- else{attackFx("enemy","magic");e.buff+=n;msg=e.name+" EMPOWERS and gains +"+n+" future damage!"}
+ else{attackFx("enemy","buff");e.buff+=n;msg=e.name+" EMPOWERS and gains +"+n+" future damage!"}
  e.midx++;if(e.weak>0)e.weak--;if(e.exposed>0)e.exposed--;
  if(s.mode!=="lost"){
   if(s.bleed>0){var dot=s.bleed;s.hp=Math.max(0,s.hp-dot);s.bleed--;msg+=" Bleed costs "+dot+" HP.";if(s.hp<=0)s.mode="lost"}
@@ -618,6 +636,7 @@ function choice(icon,title,desc,action,disabled){
 function renderModal(){
  var box=id("modalcontent"),show=s.mode!=="battle"||modalState!=="";
  id("modal").classList.toggle("show",show);
+ id("modal").classList.toggle("combat-result",show&&!modalState&&["reward","won","lost"].indexOf(s.mode)>=0);
  if(!show){box.innerHTML="";return}
  var h="",k,ev;
  if(modalState==="bag"){
@@ -698,6 +717,7 @@ function render(){
  id("intent-detail").textContent=inf.detail;
  id("energy").textContent=s.energy;
  id("deckinfo").textContent="DRAW "+s.draw.length+" · DISCARD "+s.discard.length;
+ id("foot").textContent="TAP CARDS · DRAW "+s.draw.length+" · DISCARD "+s.discard.length+" · SWIPE FOR MORE";
  id("ringbutton").disabled=s.mode!=="battle"||s.ringUsed;
  id("ringbutton").title=s.ringUsed?"RING SPENT THIS BATTLE":"Use cursed ring once this battle";
  id("potion").textContent="🧪 "+s.potions;
@@ -738,7 +758,7 @@ id("modal").addEventListener("click",function(ev){
 function attackFx(side,type){
  var player=side==="player",attacker=id(player?"player-side":"enemy-side"),
  target=id(player?"enemy-side":"player-side"),arena=id("game"),
- layer=id("battlefx"),div=document.createElement("div"),decor="",defense=type==="block"||type==="heal";
+ layer=id("battlefx"),div=document.createElement("div"),decor="",defense=type==="block"||type==="heal"||type==="buff";
  try{
   attacker.classList.remove("lunge","blocking");
   if(!defense&&type!=="arrow"&&type!=="magic")attacker.classList.add("lunge");
@@ -750,6 +770,7 @@ function attackFx(side,type){
   if(type==="stab"){div.style.height="3px";div.style.width="115px";div.style.transform="rotate(-8deg)"}
   if(type==="block")div.textContent="🛡️";
   if(type==="heal")div.textContent="💚";
+  if(type==="buff")div.textContent="⬆️";
   layer.appendChild(div);
   if(!defense){
    var spark=document.createElement("div");spark.className="fx-spark";if(!player)spark.style.left="25%";layer.appendChild(spark);setTimeout(function(){spark.remove()},530);
