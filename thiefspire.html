@@ -210,6 +210,11 @@ canvas.sprite{width:min(95%,112px);max-height:min(100%,155px);filter:drop-shadow
 .map-caption{text-align:center;margin:13px 0 5px;color:#e6cc9b;font:900 10px system-ui,sans-serif;letter-spacing:.12em}
 .map-legend{display:flex;justify-content:space-around;gap:5px;padding:3px 0 4px;color:#9db6ae;font:700 9px system-ui,sans-serif;flex-wrap:wrap}
 @media(max-width:375px){.route-node{padding:3px 4px;min-height:30px;gap:3px}.route-node small{font-size:8px}#top .mini{padding:5px 6px;font-size:10px}}
+
+.act-tabs{display:flex;gap:6px;justify-content:center;margin:10px 0 4px}
+.act-tab{flex:1;border:1px solid #6e837b;border-radius:7px;padding:8px 4px;background:#1f3138;color:#b8c9c3;font:900 11px system-ui,sans-serif;letter-spacing:.07em}
+.act-tab.active{border-color:#ffe2a8;background:#4f4c3a;color:#ffe9ab;box-shadow:0 0 10px #c99c6150}
+.act-map-heading{font:800 10px system-ui,sans-serif;letter-spacing:.13em;text-align:center;color:#d9c795;padding:5px}
 </style>
 </head>
 <body>
@@ -578,8 +583,20 @@ function endTurn(){
  }else s.log=msg;
  sound(kind==="shoot"?420:kind==="spell"?640:180);render();save()
 }
+function claimActReward(kind){
+ if(s.mode!=="act-clear")return;
+ if(kind==="heal"){hpAdd(24);s.log="The ring heals your wounds. +24 HP."}
+ else if(kind==="relic"){s.log="You claim a prize from the defeated champion: "+randomRelic()+"."}
+ else if(kind==="upgrade"){
+  var upgrades=s.deck.filter(function(k){return !up(k)});
+  if(upgrades.length){var card=upgrades[rand(upgrades.length)],idx=s.deck.indexOf(card);s.deck[idx]=card+"+";s.log=Card[card].name+" is upgraded."}
+  else{s.gold+=25;s.log="All cards are upgraded. +25 gold instead."}
+ }else return;
+ enterMap()
+}
+
 function collectFragment(){
- if([2,4,6,8,10].indexOf(s.floor)>=0&&s.fragmentFloors.indexOf(s.floor)<0){
+ if(s.fragments<5&&[4,10,18,26,34].indexOf(s.floor)>=0&&s.fragmentFloors.indexOf(s.floor)<0){
   s.fragmentFloors.push(s.floor);s.fragments=Math.min(5,s.fragments+1);
   s.log="You recover Master Loot fragment "+s.fragments+"/5. The ring stirs.";
   return " 🗝️ MASTER LOOT "+s.fragments+"/5."
@@ -715,13 +732,17 @@ function choice(icon,title,desc,action,disabled){
  return '<button class="choice" data-action="'+action+'"'+(disabled?' disabled aria-disabled="true"':'')+'><span class="icon">'+icon+'</span><span><strong>'+title+'</strong><small>'+desc+'</small></span></button>'
 }
 function renderRouteBoard(inspection){
- var out='<div class="route-board" role="group" aria-label="Twelve dungeon tiers, three chamber lanes each">';
+ var act=Math.max(1,Math.min(3,mapViewAct||currentAct(s.floor+1))),begin=(act-1)*ACT_LENGTH+1,end=act*ACT_LENGTH;
  var done=s.routeHistory||[],next=s.floor+1;
- for(var floor=1;floor<=12;floor++){
+ var out='<div class="act-tabs" role="group" aria-label="Select act">';
+ for(var tab=1;tab<=3;tab++)out+='<button class="act-tab'+(tab===act?' active':'')+'" data-action="viewact:'+tab+'">ACT '+["I","II","III"][tab-1]+'</button>';
+ out+='</div><div class="act-map-heading">'+actName(act)+' · FLOORS '+begin+'–'+end+'</div>';
+ out+='<div class="route-board" role="group" aria-label="Act '+act+': twelve dungeon floors, three chamber lanes each">';
+ for(var floor=begin;floor<=end;floor++){
   var current=floor===next&&s.mode==="map";
   var past=done.filter(function(r){return r.floor===floor})[0];
   out+='<div class="route-row'+(current?' row-next':'')+(floor===s.floor?' row-current':'')+'">';
-  out+='<span class="route-number" aria-label="Floor '+floor+'">'+String(floor).padStart(2,"0")+'</span>';
+  out+='<span class="route-number" aria-label="Floor '+floor+'">'+String(currentTier(floor)).padStart(2,"0")+'</span>';
   (s.tower[floor]||[]).forEach(function(room){
    var chosen=past&&past.lane===room.lane,missed=past&&!chosen;
    var kindClass=current?' future-option':floor<next?' old-option':' locked-option';
@@ -734,6 +755,7 @@ function renderRouteBoard(inspection){
  out+='</div><div class="map-legend"><span>🟨 Next choices</span><span>✓ Route taken</span><span>🔒 Future floors</span></div>';
  return out
 }
+
 function renderModal(){
  var box=id("modalcontent"),show=s.mode!=="battle"||modalState!=="";
  id("modal").classList.toggle("show",show);
@@ -747,7 +769,7 @@ function renderModal(){
   h+='<hr><strong>JOURNAL</strong><br>'+(s.history.length?s.history.map(function(x){return "Floor "+x.floor+": "+x.outcome}).join("<br>"):"The ink is still dry.")+'</div>';
   h+='<button class="action secondary" data-action="close">BACK TO GAME</button><button class="action secondary" data-action="new">START A NEW RUN</button>';
  }else if(modalState==="route"){
-  h='<div class="modaleyebrow">THE GOLDEN VAULT · DUNGEON MAP</div><h2>12 × 3 Dungeon</h2><p>Three chambers per tier. Your glowing trail marks the rooms you entered. The next tier is outlined in gold.</p>'+renderRouteBoard(true);
+  h='<div class="modaleyebrow">THREE ACTS · THIRTY-SIX FLOORS</div><h2>The Branching Spire</h2><p>3 acts × 12 floors × 3 chambers. Choose one route after every encounter. Your glowing trail tracks the journey.</p>'+renderRouteBoard(true);
   h+='<button class="action secondary" data-action="close">RETURN TO GAME</button>';
  }else if(s.mode==="origin"){
   h='<div class="modaleyebrow">THE RING REMEMBERS</div><h2>Choose Your Rogue</h2><p>“In the Slums, they called Master Loot a myth. Then you stole the ring.” Choose your background and starting card.</p><div class="choices">';
@@ -756,9 +778,9 @@ function renderModal(){
   h+=choice("🎭","THE CHARLATAN","Cunning 2 · Grit 1 · Lore 3 · Start with Flash Powder","origin:charlatan");
   h+='</div>';
  }else if(s.mode==="map"){
-  h='<div class="modaleyebrow">THE SPIRE · TIER '+(s.floor+1)+' OF 12</div><h2>Pick Your Path</h2><p>'+s.log+'<br>One room per tier. Three ways forward.</p><div class="choices">';
+  h='<div class="modaleyebrow">ACT '+currentAct(s.floor+1)+' / 3 · FLOOR '+currentTier(s.floor+1)+' / 12</div><h2>Pick Your Path</h2><p>'+s.log+'<br>One room per floor. Three ways forward. 36 total floors.</p><div class="choices">';
   (s.tower[s.floor+1]||[]).forEach(function(room){h+=choice(room.icon,room.title,room.desc,"room:"+room.lane)});
-  h+='</div><div class="map-caption">🗺️ THE TOWER · 12 TIERS × 3 ROOMS</div>'+renderRouteBoard(false);
+  h+='</div><div class="map-caption">🗺️ CAMPAIGN · 3 ACTS × 12 FLOORS × 3 LANES</div>'+renderRouteBoard(false);
  }else if(s.mode==="reward"){
   h='<div class="modaleyebrow">VICTORY · FLOOR '+s.floor+'</div><h2>Claim Your Spoils</h2><p>'+s.lootText+'<br>Add one card to your deck.</p><div class="choices">';
   (s.rewardChoices||[]).forEach(function(key){var c=Card[key];if(c)h+=choice(c.icon,c.name,c.cost+" ENERGY · "+c.desc,"reward:"+key)});
@@ -789,6 +811,13 @@ function renderModal(){
   if(s.eventId==="prisoner"&&s.deck.some(function(k){return cardKey(k)==="pickpocket"}))h+=choice("🪙","USE PICKPOCKET CARD","Event effect: steal the jailer's key.","eventcard:pickpocket");
   if(s.eventId==="bell"&&s.deck.some(function(k){return cardKey(k)==="smoke"}))h+=choice("💨","USE SMOKE BOMB CARD","Event effect: pass the patrol unseen.","eventcard:smoke");
   h+='</div>';
+ }else if(s.mode==="act-clear"){
+  h='<div class="modaleyebrow">ACT '+Math.floor(s.floor/ACT_LENGTH)+' / 3 · BOSS DEFEATED</div><h2>Another Gate Opens</h2>';
+  h+='<p>'+s.lootText+'<br><br>The ring offers three boons for your journey to the next act. Choose one.</p><div class="choices">';
+  h+=choice("💚","RECOVER","Heal up to 24 HP before entering the next act.","act:heal");
+  h+=choice("💍","ANCIENT RELIC","Claim one random relic from the defeated boss.","act:relic");
+  h+=choice("⚒️","HONED BLADE","Upgrade a random card in your deck.","act:upgrade");
+  h+='</div>';
  }else if(s.mode==="lost"){
   h='<div class="modaleyebrow">THE TOWER REMAINS</div><h2>You Fell on Floor '+s.floor+'</h2><p>After '+s.wins+' battles, with '+s.fragments+'/5 fragments and '+s.gold+' gold, the thief’s tale ends. Not the tower.</p><button class="action" data-action="restart">TRY AGAIN</button>';
  }else if(s.mode==="won"){
@@ -799,13 +828,13 @@ function renderModal(){
 
 
 function render(){
- id("floor").textContent="FLOOR "+String(s.floor).padStart(2,"0")+" / 12";
+ id("floor").textContent="ACT "+currentAct(s.floor)+" / 3 · "+String(s.floor?currentTier(s.floor):0).padStart(2,"0")+" / 12";
  id("gold").textContent="🪙 "+s.gold+" GOLD";
  id("fragments").textContent=s.fragments+"/5";
  id("stats").textContent="CUN "+s.stats.cun+" · GRT "+s.stats.grt+" · LOR "+s.stats.lor;
  id("relics").innerHTML=s.relics.length?s.relics.map(function(r){return '<span class="relic" data-relic="'+r+'" title="'+Relic[r].name+'">'+Relic[r].icon+"</span>"}).join(""):'<span class="empty-relic">Nothing stolen yet</span>';
- id("room").textContent=s.floor>=12?"THE GOLDEN VAULT":s.floor>=9?"THE IRON HEIGHTS":s.floor>=5?"THE INNER KEEP":"THE LOWER KEEP";
- id("encounter-name").textContent=s.mode==="origin"?"THE SLUMS":s.mode==="map"?"THREE PATHS AHEAD":s.mode==="camp"?"REST CHAMBER":s.mode==="won"?"VAULT OPEN":"FLOOR "+String(s.floor).padStart(2,"0")+" · LANE "+(s.routeHistory&&s.routeHistory.length?s.routeHistory[s.routeHistory.length-1].lane+1:"?");
+ id("room").textContent=actName(currentAct(s.floor));
+ id("encounter-name").textContent=s.mode==="origin"?"THE SLUMS":s.mode==="map"?"THREE PATHS AHEAD":s.mode==="camp"?"REST CHAMBER":s.mode==="won"?"VAULT OPEN":"FLOOR "+String(s.floor).padStart(2,"0")+" / "+TOTAL_FLOORS+" · LANE "+(s.routeHistory&&s.routeHistory.length?s.routeHistory[s.routeHistory.length-1].lane+1:"?");
  id("npc-line").textContent=s.dialogue||"The ring grows colder.";
  id("player-hp").textContent=s.hp+" / "+s.maxHp+" HP";
  id("player-fill").style.width=(100*s.hp/s.maxHp)+"%";
@@ -830,7 +859,7 @@ function render(){
  id("battlelog").textContent=s.log;
  renderCards();renderModal();
  sprite(id("thief-sprite"),"thief");
- sprite(id("enemy-sprite"),e?e.id:"guard");
+ sprite(id("enemy-sprite"),e?(e.id==="castellan"?"knight":e.id):"guard");
  if(typeof drawBackdrop==="function")drawBackdrop(Date.now())
 }
 id("endturn").addEventListener("click",endTurn);
@@ -845,6 +874,8 @@ id("modal").addEventListener("click",function(ev){
  if(action==="close"){modalState="";renderModal();return}
  if(action==="new"){if(confirm("Start a fresh run? Current progress will be erased."))reset();return}
  if(action==="restart"){reset();return}
+ if(action.indexOf("viewact:")===0){var act=Number(action.slice(8));if(act>=1&&act<=3){mapViewAct=act;renderModal()}return}
+ if(action.indexOf("act:")===0){claimActReward(action.slice(4));return}
  if(action.indexOf("origin:")===0){beginOrigin(action.slice(7));return}
  if(action.indexOf("reward:")===0){chooseReward(action.slice(7));return}
  if(action.indexOf("room:")===0){nextFloor(action.slice(5));return}
@@ -895,7 +926,7 @@ function attackFx(side,type){
 function drawBackdrop(t){
  var canvas=id("backdrop"),c=canvas.getContext("2d");if(!c)return;
  c.imageSmoothingEnabled=false;
- var zone=s.floor>=12?3:s.floor>=9?2:s.floor>=5?1:0;
+ var zone=Math.min(3,currentAct(s.floor)-1+(currentTier(s.floor)>=10?1:0));
  var palettes=[
  ["#111f29","#243741","#354b4b","#405653","#1b2e36","#8c8668"],
  ["#131f26","#2a3b37","#435341","#455947","#1b2e28","#a59a66"],
