@@ -602,34 +602,69 @@ function statuses(who){var e=who==="enemy"?s.enemy:s;if(!e)return "";var arr=[];
 function renderCards(){var box=id("hand");box.innerHTML="";if(s.mode!=="battle"){box.innerHTML='<div style="padding:35px;color:#a3bcb2;font:italic 16px Georgia">Your cards will return when the next battle begins…</div>';return}
  s.hand.forEach(function(key,i){var c=Card[cardKey(key)];if(!c)return;var el=document.createElement("button");el.className="card "+c.type+(s.energy<c.cost?" off":"");el.setAttribute("aria-label",c.name+", "+c.cost+" energy");el.innerHTML='<span class="cost">'+c.cost+'</span>'+(up(key)?'<span class="up">★</span>':"")+'<span class="glyph">'+c.icon+'</span><span class="title">'+c.name+'</span><span class="desc">'+(up(key)?"★ Upgraded · ":"")+c.desc+'</span><span class="type">'+c.type.toUpperCase()+'</span>';el.addEventListener("click",function(){playCard(i)});box.appendChild(el)})
 }
-function choice(icon,title,desc,action){return '<button class="choice" data-action="'+action+'"><span class="icon">'+icon+'</span><span><strong>'+title+'</strong><small>'+desc+'</small></span></button>'}
+
+function choice(icon,title,desc,action,disabled){
+ return '<button class="choice" data-action="'+action+'"'+(disabled?' disabled aria-disabled="true"':'')+'><span class="icon">'+icon+'</span><span><strong>'+title+'</strong><small>'+desc+'</small></span></button>'
+}
 function renderModal(){
  var box=id("modalcontent"),show=s.mode!=="battle"||modalState!=="";
  id("modal").classList.toggle("show",show);
  if(!show){box.innerHTML="";return}
- var h="",k;
+ var h="",k,ev;
  if(modalState==="bag"){
- h='<div class="modaleyebrow">THE THIEF’S SATCHEL</div><h2>Relics & Loot</h2><p>🪙 '+s.gold+' gold · '+s.deck.length+' cards · Floor '+s.floor+'</p><div class="inventory"><strong>RELICS</strong><hr>';
- h+=(s.relics.length?s.relics.map(function(r){return Relic[r].icon+" <b>"+Relic[r].name+"</b>: "+Relic[r].desc}).join("<br>"):"No relics collected.");
- h+='<hr><strong>DECK</strong><br>'+s.deck.map(function(key){var c=Card[cardKey(key)];return c.icon+" "+c.name+(up(key)?" ★":"")}).join(" · ")+'</div><button class="action secondary" data-action="close">BACK TO GAME</button><button class="action secondary" data-action="new">NEW RUN</button>'
- }else if(modalState==="help"){
- h='<div class="modaleyebrow">HOW TO SURVIVE</div><h2>THIEFSPIRE</h2><p>Tap cards to spend Energy. Block stops damage for one round. Bleed deals damage at the end of a turn, then decreases. Weak lowers damage. Exposed makes the target take extra damage.</p><button class="action" data-action="close">BACK TO GAME</button>'
+  h='<div class="modaleyebrow">THE THIEF’S SATCHEL</div><h2>Inventory & Story</h2><p>🪙 '+s.gold+' GOLD · 🧪 '+s.potions+' POTIONS · 🗝️ '+s.fragments+'/5 FRAGMENTS<br>🎲 CUN '+s.stats.cun+' · GRT '+s.stats.grt+' · LOR '+s.stats.lor+'</p><div class="inventory"><strong>💍 THE THIEF’S RING</strong><br>Permanent and cursed. Activate once per battle.<hr><strong>RELICS</strong><br>';
+  h+=(s.relics.length?s.relics.map(function(r){return Relic[r].icon+' <b>'+Relic[r].name+'</b>: '+Relic[r].desc}).join("<br>"):"None yet.");
+  h+='<hr><strong>DECK · '+s.deck.length+' CARDS</strong><br>'+s.deck.map(function(key){var c=Card[cardKey(key)];return c?c.icon+" "+c.name+(up(key)?" ★":""):"Unknown"}).join(" · ");
+  h+='<hr><strong>JOURNAL</strong><br>'+(s.history.length?s.history.map(function(x){return "Floor "+x.floor+": "+x.outcome}).join("<br>"):"The ink is still dry.")+'</div>';
+  h+='<button class="action secondary" data-action="close">BACK TO GAME</button><button class="action secondary" data-action="new">START A NEW RUN</button>';
+ }else if(s.mode==="origin"){
+  h='<div class="modaleyebrow">THE RING REMEMBERS</div><h2>Choose Your Rogue</h2><p>“In the Slums, they called Master Loot a myth. Then you stole the ring.” Choose your background and starting card.</p><div class="choices">';
+  h+=choice("🗡️","THE CUTPURSE","Cunning 3 · Grit 1 · Lore 1 · Start with Pickpocket","origin:cutpurse");
+  h+=choice("🥷","THE SHADOW","Cunning 2 · Grit 2 · Lore 1 · Start with Evasion Roll","origin:shadow");
+  h+=choice("🎭","THE CHARLATAN","Cunning 2 · Grit 1 · Lore 3 · Start with Flash Powder","origin:charlatan");
+  h+='</div>';
+ }else if(s.mode==="map"){
+  h='<div class="modaleyebrow">CHOOSE YOUR ROUTE · FLOOR '+(s.floor+1)+'/12</div><h2>Three Paths Above</h2><p>'+s.log+'<br><br>“Every door is a gamble. Every gamble is a story.”</p><div class="choices">';
+  (s.roomChoices||[]).forEach(function(key){var info=RoomInfo[key];if(info)h+=choice(info[0],info[1],info[2],"room:"+key)});
+  h+='</div><p style="font-size:11px">Each room may be cleared once.</p>';
  }else if(s.mode==="reward"){
- h='<div class="modaleyebrow">ROOM CLEARED · FLOOR '+s.floor+'</div><h2>Claim Your Spoils</h2><p>'+s.lootText+'<br>Pick a card to permanently add to your deck.</p><div class="choices">';
- s.rewardChoices.forEach(function(key){var c=Card[key];h+=choice(c.icon,c.name,c.cost+" ENERGY · "+c.desc,"reward:"+key)});
- h+='</div><button class="action secondary" data-action="reward:skip">SKIP CARD · KEEP GOLD</button>';
+  h='<div class="modaleyebrow">VICTORY · FLOOR '+s.floor+'</div><h2>Claim Your Spoils</h2><p>'+s.lootText+'<br>Add one card to your deck.</p><div class="choices">';
+  (s.rewardChoices||[]).forEach(function(key){var c=Card[key];if(c)h+=choice(c.icon,c.name,c.cost+" ENERGY · "+c.desc,"reward:"+key)});
+  h+='</div><button class="action secondary" data-action="reward:skip">SKIP CARD</button>';
  }else if(s.mode==="camp"){
- h='<div class="modaleyebrow">FLOOR '+s.floor+' · QUIET CHAMBER</div><h2>Rest by the Fire</h2><p>For once, nobody is trying to stab you. Choose how to spend this rare peace.</p><div class="choices">';
- h+=choice("💚","Mend Your Wounds","Recover up to 20 HP.","camp:heal");
- h+=choice("⚒️","Hone Your Deck","Upgrade one random unupgraded card.","camp:upgrade");
- h+='</div>'
+  h='<div class="modaleyebrow">FLOOR '+s.floor+' · REST CHAMBER</div><h2>Campfire & Tales</h2><p>“At least the fire is not trying to rob us,” mutters a wandering knight.</p><div class="choices">';
+  h+=choice("💚","BANDAGE WOUNDS","Recover up to 20 HP.","camp:heal");
+  h+=choice("⚒️","HONE YOUR WEAPON","Upgrade one unupgraded card.","camp:upgrade");
+  h+=choice("📖","STUDY OLD MAPS","Gain +1 Lore for future d20 checks.","camp:study");
+  h+='</div>';
+ }else if(s.mode==="treasure"){
+  h='<div class="modaleyebrow">FLOOR '+s.floor+' · TREASURY</div><h2>The Silent Coffer</h2><p>One chest, one decision. The tower keeps score.</p><div class="choices">';
+  h+=choice("🗝️","PICK THE LOCK","Roll d20 + Cunning against DC 11.","treasure:lock");
+  h+=choice("🔨","BREAK THE HINGES","Roll d20 + Grit against DC 13.","treasure:smash");
+  h+=choice("🚪","LEAVE IT","No treasure, no trap.","treasure:leave");
+  h+='</div>';
+ }else if(s.mode==="merchant"){
+  var stock=s.shopStock||{};
+  h='<div class="modaleyebrow">FLOOR '+s.floor+' · BLACK MARKET</div><h2>The Merchant</h2><p>“Stolen goods, honest prices.” 🪙 '+s.gold+' GOLD</p><div class="choices">';
+  h+=choice("🧪","POTION · 12G","Restores 13 HP. Only one in stock.","shop:potion",!!stock.potionBought||s.gold<12);
+  h+=choice(stock.card&&Card[stock.card]?Card[stock.card].icon:"🃏",stock.card&&Card[stock.card]?Card[stock.card].name+" · 20G":"SOLD OUT",stock.card&&Card[stock.card]?Card[stock.card].desc:"No card stocked.","shop:card",!!stock.cardBought||s.gold<20);
+  h+=choice(stock.relic&&Relic[stock.relic]?Relic[stock.relic].icon:"💍",stock.relic&&Relic[stock.relic]?Relic[stock.relic].name+" · 55G":"NO RELIC",stock.relic&&Relic[stock.relic]?Relic[stock.relic].desc:"No relic stocked.","shop:relic",!!stock.relicBought||s.gold<55||!stock.relic);
+  h+='</div><button class="action secondary" data-action="shop:leave">LEAVE MARKET · NEXT ROOM</button>';
+ }else if(s.mode==="event"){
+  ev=Events[s.eventId]||Events.dice;
+  h='<div class="modaleyebrow">FLOOR '+s.floor+' · DUNGEON ENCOUNTER</div><h2>'+ev.icon+' '+ev.name+'</h2><p>'+ev.text+'</p><div class="choices">';
+  ev.opts.forEach(function(opt,i){h+=choice(["🎲","🗡️","🚪"][i],opt[0],"Choose once. The consequences are permanent.","event:"+i,opt[1]==="sacrifice"&&s.hp<=7)});
+  if(s.eventId==="prisoner"&&s.deck.some(function(k){return cardKey(k)==="pickpocket"}))h+=choice("🪙","USE PICKPOCKET CARD","Event effect: steal the jailer's key.","eventcard:pickpocket");
+  if(s.eventId==="bell"&&s.deck.some(function(k){return cardKey(k)==="smoke"}))h+=choice("💨","USE SMOKE BOMB CARD","Event effect: pass the patrol unseen.","eventcard:smoke");
+  h+='</div>';
  }else if(s.mode==="lost"){
- h='<div class="modaleyebrow">THE TOWER REMAINS</div><h2>You Fell on Floor '+s.floor+'</h2><p>You cleared '+s.wins+' encounters and collected '+s.gold+' gold. The Golden Vault claims another thief.</p><button class="action" data-action="restart">TRY AGAIN</button>'
+  h='<div class="modaleyebrow">THE TOWER REMAINS</div><h2>You Fell on Floor '+s.floor+'</h2><p>After '+s.wins+' battles, with '+s.fragments+'/5 fragments and '+s.gold+' gold, the thief’s tale ends. Not the tower.</p><button class="action" data-action="restart">TRY AGAIN</button>';
  }else if(s.mode==="won"){
- h='<div class="modaleyebrow">THE GOLDEN VAULT IS YOURS</div><h2>THE MASTER THIEF</h2><p>🪙 '+s.gold+' GOLD · '+s.wins+' VICTORIES<br>You defeated the Warden and escaped with the treasure. The tower will never forgive you.</p><button class="action" data-action="restart">NEW RUN</button>'
- }
+  h='<div class="modaleyebrow">THE GOLDEN VAULT IS YOURS</div><h2>THE MASTER THIEF</h2><p>🪙 '+s.gold+' GOLD · 🗝️ '+s.fragments+'/5 FRAGMENTS · '+s.wins+' BATTLES<br>“You may keep the gold,” says the ring. “I kept the stories.”<br><br>'+(s.fragments===5?"All five fragments reassemble. The heist is complete.":"The Warden falls. Some fragments remain lost.")+'</p><button class="action" data-action="restart">NEW HEIST</button>';
+ }else h='<h2>The Ring Waits</h2><button class="action" data-action="restart">NEW RUN</button>';
  box.innerHTML=h
 }
+
 function render(){
  id("floor").textContent="FLOOR "+String(s.floor).padStart(2,"0")+" / 12";
  id("gold").textContent="🪙 "+s.gold+" GOLD";
