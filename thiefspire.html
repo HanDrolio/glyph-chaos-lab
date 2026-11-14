@@ -318,6 +318,45 @@ canvas.sprite{width:min(95%,112px);max-height:min(100%,155px);filter:drop-shadow
 @keyframes map-node-beacon{0%,100%{box-shadow:0 0 7px #e7b86a44}50%{box-shadow:0 0 16px #ffdd897c}}
 @media(max-height:690px){.route-board{max-height:min(270px,40dvh)}.route-row{min-height:41px}.route-node.playable{min-height:42px}}
 @media(prefers-reduced-motion:reduce){.route-node.playable{animation:none}}
+
+/* Every monster has its own action animation, not just a generic left lunge. */
+#enemy-side.lunge.anim-guard{animation:guard-slash .47s steps(6,end)}
+#enemy-side.lunge.anim-knight{animation:knight-shieldbash .61s steps(7,end)}
+#enemy-side.lunge.anim-castellan{animation:castellan-draw .53s steps(6,end)}
+#enemy-side.lunge.anim-captain{animation:captain-dualcut .47s steps(8,end)}
+#enemy-side.lunge.anim-warden{animation:warden-halberd .76s steps(8,end)}
+#enemy-side.lunge.anim-jailer{animation:jailer-flail .66s steps(8,end)}
+#enemy-side.lunge.anim-goblin{animation:goblin-jump .37s steps(6,end)}
+#enemy-side.lunge.anim-slime{animation:slime-squash .55s steps(7,end)}
+#enemy-side.lunge.anim-rat{animation:rat-scamper .39s steps(8,end)}
+#enemy-side.lunge.anim-mimic{animation:mimic-chomp .6s steps(7,end)}
+#enemy-side.lunge.anim-skeleton{animation:skeleton-fence .42s steps(7,end)}
+#enemy-side.lunge.anim-archer{animation:archer-release .48s steps(5,end)}
+#enemy-side.lunge.anim-monk{animation:monk-censer .72s steps(8,end)}
+#enemy-side.lunge.anim-mage{animation:mage-cast .62s steps(7,end)}
+#enemy-side.lunge.anim-cultist{animation:cultist-invoke .6s steps(6,end)}
+#enemy-side.lunge.anim-wraith{animation:wraith-phase .6s steps(7,end)}
+#enemy-side.lunge.anim-ogre{animation:ogre-earthshaker .78s steps(8,end)}
+#enemy-side.lunge.anim-imp{animation:imp-leap .45s steps(7,end)}
+@keyframes guard-slash{0%,100%{transform:none}30%{transform:translate(9px,-5px)}58%{transform:translate(-39px,1px) rotate(-7deg)}}
+@keyframes knight-shieldbash{0%,100%{transform:none}28%{transform:translate(10px,-5px) rotate(6deg)}57%{transform:translate(-42px,4px) rotate(-3deg)}}
+@keyframes castellan-draw{0%,100%{transform:none}20%{transform:rotate(8deg) translateY(-7px)}61%{transform:translate(-53px,0) rotate(-11deg)}}
+@keyframes captain-dualcut{0%,100%{transform:none}19%{transform:translateX(-25px) rotate(-7deg)}41%{transform:translateX(-64px) rotate(7deg)}67%{transform:translateX(-27px) rotate(-5deg)}}
+@keyframes warden-halberd{0%,100%{transform:none}30%{transform:translateY(-13px) rotate(-11deg)}57%{transform:translate(-40px,10px) rotate(10deg)}74%{transform:translate(-48px,5px)}}
+@keyframes jailer-flail{0%,100%{transform:none}27%{transform:translate(9px,-8px) rotate(9deg)}53%{transform:translate(-29px,7px) rotate(-10deg)}70%{transform:translate(-44px,5px)}}
+@keyframes goblin-jump{0%,100%{transform:none}35%{transform:translate(-24px,-16px) scale(1.08)}60%{transform:translate(-56px,1px)}}
+@keyframes slime-squash{0%,100%{transform:scale(1)}24%{transform:scale(1.2,.77) translateY(9px)}55%{transform:translate(-34px,-11px) scale(.8,1.32)}}
+@keyframes rat-scamper{0%,100%{transform:none}24%{transform:translate(-17px,2px)}47%{transform:translate(-43px,-7px) rotate(-8deg)}68%{transform:translate(-60px,0)}}
+@keyframes mimic-chomp{0%,100%{transform:none}24%{transform:scale(1,1.25) translateY(-7px)}52%{transform:translate(-46px,6px) scale(1.1,.84)}}
+@keyframes skeleton-fence{0%,100%{transform:none}32%{transform:translateX(-8px)}58%{transform:translateX(-72px) scaleX(.9)}}
+@keyframes archer-release{0%,100%{transform:none}30%{transform:translateX(8px) scaleX(.94)}53%{transform:translate(-17px,4px)}}
+@keyframes monk-censer{0%,100%{transform:none}25%{transform:translateY(-7px) rotate(9deg)}55%{transform:translate(-24px,-5px) rotate(-8deg)}}
+@keyframes mage-cast{0%,100%{transform:none}28%{transform:translateY(-15px) rotate(-6deg)}55%{transform:translate(-21px,-7px) rotate(7deg)}}
+@keyframes cultist-invoke{0%,100%{transform:none}30%{transform:translateY(-12px) scale(1.08)}60%{transform:translate(-27px,-6px)}}
+@keyframes wraith-phase{0%,100%{transform:none;opacity:1}26%{transform:translateY(-12px);opacity:.38}56%{transform:translate(-55px,-8px);opacity:.85}}
+@keyframes ogre-earthshaker{0%,100%{transform:none}33%{transform:translateY(-15px) rotate(7deg)}57%{transform:translate(-46px,12px) rotate(-7deg)}}
+@keyframes imp-leap{0%,100%{transform:none}25%{transform:translate(-8px,-18px) rotate(-6deg)}50%{transform:translate(-43px,-5px) rotate(12deg)}}
+@media(prefers-reduced-motion:reduce){#enemy-side.lunge,#player-side.lunge{animation:none!important}}
 </style>
 </head>
 <body>
@@ -333,7 +372,7 @@ canvas.sprite{width:min(95%,112px);max-height:min(100%,155px);filter:drop-shadow
     <div id="fighters">
       <div class="fighter" id="player-side">
         <div class="sprite-wrap"><canvas id="thief-sprite" class="sprite" width="64" height="64" aria-label="Pixel-art hooded thief"></canvas></div>
-        <div class="name">THE THIEF</div>
+        <div class="name" id="player-name">THE THIEF</div>
         <div class="healthbar"><span id="player-fill"></span></div>
         <div class="statline"><span id="player-hp">68 / 68 HP</span><span id="player-block">🛡 0</span></div>
         <div class="statuses" id="player-status"></div>
@@ -946,6 +985,9 @@ function render(){
  id("room").textContent=actName(currentAct(s.floor));
  id("encounter-name").textContent=s.mode==="origin"?"THE SLUMS":s.mode==="map"?"THREE PATHS AHEAD":s.mode==="camp"?"REST CHAMBER":s.mode==="won"?"VAULT OPEN":"FLOOR "+String(s.floor).padStart(2,"0")+" / "+TOTAL_FLOORS+" · LANE "+(s.routeHistory&&s.routeHistory.length?s.routeHistory[s.routeHistory.length-1].lane+1:"?");
  id("npc-line").textContent=s.dialogue||"The ring grows colder.";
+ id("player-name").textContent=({"cutpurse":"CUTPURSE","shadow":"SHADOW","charlatan":"CHARLATAN"}[s.origin]||"THE THIEF");
+ id("thief-sprite").setAttribute("aria-label","Pixel-art "+(s.origin||"thief")+" character");
+ id("enemy-sprite").setAttribute("aria-label","Pixel-art "+(e?e.name:"enemy")+" character");
  id("player-hp").textContent=s.hp+" / "+s.maxHp+" HP";
  id("player-fill").style.width=(100*s.hp/s.maxHp)+"%";
  id("player-block").textContent="🛡 "+s.block;id("player-status").innerHTML=statuses("player");
