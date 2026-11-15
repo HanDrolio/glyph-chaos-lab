@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#080b19">
+<title>COSM.OS · Pocket Duel</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#080b19;overflow:hidden;font-family:system-ui,-apple-system,sans-serif}
+#stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+canvas{display:block;width:min(100vw,calc(100vh*16/9));height:auto;image-rendering:pixelated;image-rendering:crisp-edges;touch-action:manipulation}
+#rotate{display:none;position:fixed;inset:0;z-index:5;background:#080b19;color:#eef3ff;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:24px;font-size:18px}
+@media (orientation:portrait){#rotate{display:flex}}
+a.back{position:fixed;top:calc(8px + env(safe-area-inset-top));left:calc(8px + env(safe-area-inset-left));color:#75e8fa;font-size:12px;text-decoration:none;z-index:3;padding:6px 10px;border:1px solid #344163;border-radius:12px;background:#10162a}
+</style>
+</head>
+<body>
+<div id="rotate">📱↻<br>Rotate to landscape to duel</div>
+<div id="stage">
+  <canvas id="c" width="320" height="180"></canvas>
+</div>
+<a class="back" href="./index.html">← LAB</a>
+<script>
+/* ---------- palette ---------- */
+const PAL={K:'#141414',W:'#ffffff',g:'#9aa3b5',G:'#5a6170',R:'#e94b3c',O:'#ff9a3c',Y:'#ffd84a',b:'#8a5a32',B:'#3a7cff',c:'#7fe9ff',L:'#4fcf5a',D:'#237a3a',P:'#9b6bff',p:'#ff8fc8',N:'#3b2a4f'};
+
+/* ---------- type chart (attacker -> defender multipliers) ---------- */
+const MULT={fire:{grass:2,water:.5,rock:.5},water:{fire:2,rock:2,grass:.5,electric:.5},grass:{water:2,rock:2,fire:.5},electric:{water:2,grass:.5},rock:{fire:2,electric:2,water:.5,grass:.5},ghost:{ghost:2,rock:.5}};
+
+/* ---------- monsters
+   s = LEFT HALF of each 16x16 sprite (8 cols, mirrored automatically). Edit these to redraw. */
+const MONS=[
+{n:'EMBERPUP',t:'fire',hp:40,atk:14,def:10,spd:13,
+ s:["...KK...","..KOOK..",".KOOOKKK",".KOOWOOO",".KOOKOOO",".KOOOOOO","KOOOOKKK","KOOOOOOO","KOOOKOOO","KOOOOOOO",".KOOOOOO","..KOOK..","..KOOK..","..KKKK.."],
+ m:[['Ember','fire',40],['Scratch','normal',34],['Snap','normal',30],['Flame','fire',58]]},
+{n:'MOSSLING',t:'grass',hp:46,atk:11,def:13,spd:8,
+ s:["...DD...","..DLLD..",".KLLLLK.","KLLWWLLK","KLLWKLLK","KLLLLLLK","KLLLLLLK","KLLKKLLK","KDLLLLDK","KDDLLDDK",".KDDDDK.","..KKKK.."],
+ m:[['Vine','grass',40],['Leaf','grass',34],['Bash','normal',30],['Seedbomb','grass',56]]},
+{n:'TIDEFIN',t:'water',hp:44,atk:12,def:12,spd:11,
+ s:["..KK....",".KBBK...","KBBBBK..","KBWWBBK.","KBWKBBBK","KBBBBBBK","KBBBBBBK","KBBBBBBK",".KBBBBK.","KBBBBBBK","KBKKKKBK","KK......"],
+ m:[['Splash','water',40],['Bite','normal',34],['Aqua Jet','water',54],['Bubble','water',30]]},
+{n:'VOLTMOTH',t:'electric',hp:36,atk:13,def:9,spd:16,
+ s:["KK......","KYYK....","KYYYK...","KYYYYKK.","KYYYKWWK","KNNNNNNK","KNNYNNNK","KNNNNNNK",".KNNNNK.","..KNNK..","..K.K..."],
+ m:[['Spark','electric',40],['Dust','normal',30],['Static','electric',56],['Gust','normal',32]]},
+{n:'GLOOMWISP',t:'ghost',hp:34,atk:15,def:8,spd:14,
+ s:["..KKKK..",".KPPPPPK","KPPWKKWP","KPPPPPPK","KPPPPPPK","KPPPPPPK","KPPPPPPK","KPPPPPPK","KPKPPKPK","KPKPKPKP","K.K.K..."],
+ m:[['Shade','ghost',40],['Nip','normal',28],['Haunt','ghost',60],['Fade','ghost',36]]},
+{n:'STONEKIN',t:'rock',hp:52,atk:16,def:18,spd:6,
+ s:["..KKKK..",".KggggGK","KgWgggGK","KgggggGK","KgggGGGK","KGgggggK","KGGGGGGK","KgbggggK","KGGGGGGK","KGGKKGGK","KGK.....","KKK....."],
+ m:[['Rocktoss','rock',40],['Stomp','normal',42],['Rockslide','rock',56],['Tackle','normal',32]]},
+{n:'GLIMMERBAT',t:'electric',hp:38,atk:13,def:10,spd:15,
+ s:["KK......","KPPK....","KPPPKK..","KPPWPPK.","KPKYPPPK","KPPPPPPK","KKPPPPKK","..KPPPK.","...KPK..","....K..."],
+ m:[['Thunder','electric',52],['Screech','normal',34],['Wingslap','normal',32],['Zap','electric',40]]},
+{n:'THORNBACK',t:'grass',hp:48,atk:14,def:14,spd:7,
+ s:["K..K....","KLKKK...","KDDLDK..","KDDWLDDK","KDWLLLDK","KLLLLLLK","KDDDDDDK","KDDDDDDK","KDDDDDDK",".KDDDDK.","..K..K.."],
+ m:[['Thorns','grass',40],['Headbutt','normal',36],['Seedburst','grass',56],['Bite','normal',30]]},
+{n:'CINDERHAWK',t:'fire',hp:38,atk:15,def:9,spd:17,
+ s:["...KK...","..KOOK..",".KOWOOOK",".KOOOOOY","KRROOOOK","KRRROOOK","KRRRROOK",".KRRRRK.","..KRRK..","..KYYK..","..KY.K.."],
+ m:[['Ember','fire',40],['Peck','normal',30],['Dive','normal',55],['Flare','fire',44]]},
+{n:'DREAMSNAIL',t:'ghost',hp:56,atk:9,def:16,spd:5,
+ s:["..KKKK..",".KPPPPK.","KPPKKPPK","KPKPPPPK","KPKPKKPK","KPPKPPKK","KKKKKKKK","KggggggK","KggggggK","KgggggGK",".KGGGGK.","..KKKK.."],
+ m:[['Lullaby','ghost',30],['Shell','normal',40],['Sleep','ghost',44],['Bubble','water',34]]}
+];
+/* full 16-wide rows, mirrored from the left half */
+const FULL=MONS.map(m=>m.s.map(r=>{const l=r.padEnd(8,'.').slice(0,8);return l+l.split('').reverse().join('');}));
+
+/* ---------- canvas ---------- */
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+ctx.imageSmoothingEnabled=false;
+
+/* ---------- state ---------- */
+let scene='select',sel=0,P=null,E=null,pIdx=0,phase='menu',cursor=0,mcur=0,frame=0;
+let msgQ=[],msgCur=null,afterQ=null,endRes='';
+
+function fighter(i){const m=MONS[i];return{idx:i,name:m.n,t:m.t,hp:m.hp,max:m.hp,atk:m.atk,def:m.def,spd:m.spd,moves:m.m,rows:FULL[i],flash:0};}
+
+/* ---------- message queue ---------- */
+function queueMsg(text,fn,skip){msgQ.push({text,fn,skip});}
+function runQueue(done){afterQ=done;advanceQ();}
+function advanceQ(){
+  while(msgQ.length&&msgQ[0].skip&&msgQ[0].skip())msgQ.shift();
+  if(msgQ.length){msgCur=msgQ.shift();phase='msg';return;}
+  msgCur=null;const f=afterQ;afterQ=null;if(f)f();
+}
+function confirmMsg(){
+  if(!msgCur)return;
+  const it=msgCur;msgCur=null;
+  if(it.fn)it.fn();
+  advanceQ();
+}
+
+/* ---------- battle logic ---------- */
+function startBattle(i){
+  pIdx=i;
+  const pool=MONS.map((_,k)=>k).filter(k=>k!==i);
+  P=fighter(i);
+  E=fighter(pool[Math.floor(Math.random()*pool.length)]);
+  scene='battle';msgQ=[];msgCur=null;afterQ=null;endRes='';
+  queueMsg(`A wild ${E.name} appeared!`);
+  runQueue(()=>{phase='menu';cursor=0;});
+}
+function calc(f,d,mv){
+  const m=(MULT[mv[1]]||{})[d.t]||1;
+  const base=Math.floor(((2*20/5+2)*mv[2]*f.atk/d.def)/50)+2;
+  const v=Math.max(1,Math.floor(base*m*(0.85+Math.random()*0.15)));
+  return{v,m};
+}
+function hit(f,d,mv){
+  const r=calc(f,d,mv);
+  d.hp=Math.max(0,d.hp-r.v);d.flash=30;
+  const extra=[];
+  if(r.m>1)extra.push({text:"It's super effective!"});
+  else if(r.m<1)extra.push({text:"It's not very effective..."});
+  if(d.hp<=0)extra.push({text:`${d.name} fainted!`});
+  msgQ.unshift(...extra);
+}
+function playTurn(k){
+  const mv=P.moves[k];
+  const em=E.moves[Math.floor(Math.random()*E.moves.length)];
+  const acts=[{f:P,d:E,mv},{f:E,d:P,mv:em}];
+  acts.sort((a,b)=>b.f.spd-a.f.spd);
+  if(acts[0].f.spd===acts[1].f.spd&&Math.random()<.5)acts.reverse();
+  for(const a of acts){
+    queueMsg(`${a.f.name} used ${a.mv[0]}!`,()=>hit(a.f,a.d,a.mv),()=>a.f.hp<=0||a.d.hp<=0);
+  }
+  runQueue(endTurn);
+}
+function endTurn(){
+  if(E.hp<=0){phase='end';endRes='win';return;}
+  if(P.hp<=0){phase='end';endRes='lose';return;}
+  phase='menu';cursor=0;
+}
+
+/* ---------- input ---------- */
+function press(a){
+  if(scene==='select'){
+    if(a==='left')sel=(sel+9)%10;
+    if(a==='right')sel=(sel+1)%10;
+    if(a==='up'||a==='down')sel=(sel+5)%10;
+    if(a==='confirm')startBattle(sel);
+    return;
+  }
+  if(phase==='msg'){if(a==='confirm')confirmMsg();return;}
+  if(phase==='menu'){
+    if(a==='up'||a==='down')cursor=1-cursor;
+    if(a==='confirm'){
+      if(cursor===0){phase='moves';mcur=0;}
+      else{queueMsg('Got away safely!');runQueue(()=>{phase='end';endRes='run';});}
+    }
+    return;
+  }
+  if(phase==='moves'){
+    if(a==='left'||a==='right')mcur^=1;
+    if(a==='up'||a==='down')mcur^=2;
+    if(a==='confirm')playTurn(mcur);
+    if(a==='back')phase='menu';
+    return;
+  }
+  if(phase==='end'){
+    if(a==='confirm'){if(endRes==='win')startBattle(pIdx);else scene='select';}
+  }
+}
+const KEYMAP={ArrowUp:'up',w:'up',ArrowDown:'down',s:'down',ArrowLeft:'left',a:'left',ArrowRight:'right',d:'right',Enter:'confirm',z:'confirm',' ':'confirm',Escape:'back',x:'back',Backspace:'back'};
+addEventListener('keydown',e=>{const a=KEYMAP[e.key];if(a){e.preventDefault();if(!e.repeat||a!=='confirm')press(a);}});
+cv.addEventListener('pointerdown',()=>{press('confirm');});
+
+/* Gamepad: standard mapping (Backbone One and other MFi/Bluetooth pads).
+   A/cross = confirm, B/circle = back, D-pad or left stick = move. */
+const GP_MAP=[[0,'confirm'],[1,'back'],[12,'up'],[13,'down'],[14,'left'],[15,'right']];
+const gpPrev={};
+function pollPad(){
+  const pads=navigator.getGamepads?navigator.getGamepads():[];
+  for(const gp of pads){
+    if(!gp)continue;
+    const now={};
+    for(const[i,a]of GP_MAP){const b=gp.buttons[i];now[a]=!!(b&&(b.pressed||b.value>.5));}
+    const ax=gp.axes||[];
+    if(ax[0]<-.5)now.left=true;if(ax[0]>.5)now.right=true;
+    if(ax[1]<-.5)now.up=true;if(ax[1]>.5)now.down=true;
+    const prev=gpPrev[gp.index]||{};
+    for(const a in now)if(now[a]&&!prev[a])press(a);
+    gpPrev[gp.index]=now;
+  }
+}
+
+/* ---------- drawing ---------- */
+function px(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(x,y,w,h);}
+function txt(s,x,y,c='#eef3ff',f='8px monospace'){ctx.font=f;ctx.fillStyle=c;ctx.textBaseline='top';ctx.fillText(s,x,y);}
+function box(x,y,w,h,border='#75e8fa'){
+  px(x,y,w,h,'#10162a');
+  px(x,y,w,1,border);px(x,y+h-1,w,1,border);px(x,y,1,h,border);px(x+w-1,y,1,h,border);
+}
+function drawSpr(rows,x,y,sc){
+  for(let r=0;r<rows.length;r++){
+    const row=rows[r];
+    for(let c=0;c<16;c++){
+      const col=PAL[row[c]];
+      if(col){ctx.fillStyle=col;ctx.fillRect(x+c*sc,y+r*sc,sc,sc);}
+    }
+  }
+}
+function wrapText(s,x,y,maxW,lh){
+  ctx.font='9px monospace';
+  const words=s.split(' ');let line='',yy=y;
+  for(const w of words){
+    const test=line?line+' '+w:w;
+    if(ctx.measureText(test).width>maxW){txt(line,x,yy,'#eef3ff','9px monospace');yy+=lh;line=w;}
+    else line=test;
+  }
+  if(line)txt(line,x,yy,'#eef3ff','9px monospace');
+}
+function infoBox(x,y,w,h,f,showHp){
+  box(x,y,w,h);
+  txt(f.name,x+6,y+5,'#ffffff','bold 8px monospace');
+  txt('Lv20',x+w-28,y+5,'#ffdb69');
+  px(x+6,y+18,w-12,4,'#222');
+  const r=f.hp/f.max;
+  px(x+6,y+18,Math.round((w-12)*r),4,r>.5?'#4fcf5a':r>.2?'#ffd84a':'#e94b3c');
+  if(showHp)txt(`HP ${f.hp}/${f.max}`,x+6,y+25,'#eef3ff');
+}
+function drawSelect(){
+  px(0,0,320,180,'#1b2747');
+  txt('POCKET DUEL · PICK YOUR MONSTER',10,8,'#ffdb69','bold 8px monospace');
+  for(let i=0;i<10;i++){
+    const col=i%5,row=Math.floor(i/5);
+    const cx=10+col*62,cy=24+row*68;
+    box(cx,cy,58,62,i===sel?'#75e8fa':'#344163');
+    drawSpr(FULL[i],cx+5,cy+6,3);
+    txt(MONS[i].n,cx+3,cy+50,i===sel?'#ffffff':'#9daecb','7px monospace');
+  }
+  txt('D-PAD move · A pick · B back',10,166,'#9daecb');
+}
+function drawBattle(){
+  px(0,0,320,88,'#9fe0ff');
+  px(0,88,320,38,'#7ccf6a');
+  px(0,96,320,2,'#63b556');
+  ctx.fillStyle='#5b8f4a';
+  ctx.beginPath();ctx.ellipse(254,82,44,8,0,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.ellipse(66,112,48,9,0,0,Math.PI*2);ctx.fill();
+  if(!(E.flash&&((E.flash>>2)&1)))drawSpr(E.rows,214,8,5);
+  if(!(P.flash&&((P.flash>>2)&1)))drawSpr(P.rows,26,40,5);
+  infoBox(8,8,136,36,E,false);
+  infoBox(150,86,162,36,P,true);
+
+  box(0,126,320,54);
+  box(6,130,196,44,'#344163');
+  box(206,130,108,44,'#344163');
+
+  let t='';
+  if(phase==='msg')t=msgCur?msgCur.text:'';
+  else if(phase==='menu')t=`What will ${P.name} do?`;
+  else if(phase==='moves')t='Pick a move.';
+  else if(phase==='end')t=endRes==='win'?`${E.name} fainted! You won! (A: next)`:endRes==='lose'?`${P.name} fainted... (A: back)`:'Got away safely! (A: back)';
+  wrapText(t,14,138,180,11);
+
+  if(phase==='msg'&&msgCur&&(frame%40<20))txt('▼',190,162,'#ffdb69');
+  if(phase==='menu'){
+    txt('FIGHT',220,138);txt('RUN',220,154);
+    txt('>',210,138+cursor*16,'#ffdb69');
+  }
+  if(phase==='moves'){
+    for(let k=0;k<4;k++){
+      const col=k&1,row=k>>1;
+      const x=220+col*48,y=138+row*14;
+      txt(P.moves[k][0],x,y,'#eef3ff','7px monospace');
+    }
+    const cx=212+(mcur&1)*48,cy=138+(mcur>>1)*14;
+    txt('>',cx,cy,'#ffdb69','7px monospace');
+  }
+}
+function draw(){
+  if(scene==='select')drawSelect();else drawBattle();
+}
+
+/* ---------- loop ---------- */
+function loop(){
+  frame++;
+  pollPad();
+  if(P&&P.flash>0)P.flash--;
+  if(E&&E.flash>0)E.flash--;
+  draw();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
